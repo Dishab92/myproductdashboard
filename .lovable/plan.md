@@ -1,38 +1,55 @@
 
 
-# Add Info Tooltips to Reports Hub
+# Replace Tier with Release Version
 
-Add informational tooltips to the Reports Hub page to match the pattern already established on other pages.
+Remove the "Tier" concept (Enterprise/Professional/Starter) and replace it with "Release" version based on the spreadsheet data.
 
-## Changes
+## Release Mapping (from the provided spreadsheet)
 
-**File: `src/pages/ReportsHub.tsx`**
+| Customer | Release |
+|----------|---------|
+| JAMS Software | Q3:2025 |
+| nCino | Q2:2025 |
+| Accela | Q1:2025 |
+| Nozomi Networks | Q3:2025 |
+| Bluebeam | Q4:2024 |
+| RainTree | Yet to Go-Live |
+| SUSE | Q4:2024 |
+| TechnologyOne | Q2:2024 |
+| Command Alkon | Yet to Go-Live |
+| Netskope (Case QA) | Q3:2024 |
 
-Add tooltips to:
+## Files to Modify
 
-1. **Ranking Table section** -- Explain that the table ranks customers by adoption score (Reach 40% + Frequency 30% + Depth 30%) for the selected filters.
+### 1. `src/lib/types.ts`
+- Rename `tier` to `release` in `CustomerRecord` and `CustomerMetrics` interfaces.
 
-2. **Comparison Chart section** -- Explain that the chart shows daily active user trends for the top 5 customers by adoption score.
+### 2. `src/lib/mock-data.ts`
+- Replace `tier` field with `release` in customer arrays using the values above.
+- Remove tier-based daily activity logic (line 65: `cust.tier === "Enterprise" ? 0.85 ...`). Replace with a simpler approach using licensed user count as a proxy for activity level.
+- Update `generateMockCustomers()` to map `release` instead of `tier`.
 
-3. **Export CSV button area** -- Add a small info icon tooltip explaining what columns are included in the export.
+### 3. `src/context/DataContext.tsx`
+- Rename `tierFilter` / `setTierFilter` to `releaseFilter` / `setReleaseFilter` in the context type and provider.
 
-### Implementation
+### 4. `src/components/dashboard/FilterBar.tsx`
+- Replace the Tier dropdown with a Release dropdown listing: Q2:2024, Q3:2024, Q4:2024, Q1:2025, Q2:2025, Q3:2025, Yet to Go-Live.
 
-- Import `Info`, `Tooltip`, `TooltipProvider`, `TooltipTrigger`, `TooltipContent` (same pattern as CustomerDrilldown)
-- Add inline tooltip icons next to the "Ranking Table" and "Comparison Chart" tab content headers
-- Add tooltip next to the "Top 5 Customers" chart title
+### 5. `src/components/dashboard/CustomerTable.tsx`
+- Change "Tier" column header to "Release" and display `c.release` instead of `c.tier`.
 
-### Tooltip Content
+### 6. `src/pages/Index.tsx`
+- Update `tierFilter` references to `releaseFilter`, filter by `c.release` instead of `c.tier`.
 
-| Location | Tooltip Text |
-|----------|-------------|
-| Ranking Table header | Customers ranked by adoption score. Score = Reach (40%) + Frequency (30%) + Depth (30%) |
-| Comparison Chart title | Daily active user trends for the top 5 customers by adoption score |
-| Export CSV | Exports customer, product, tier, active users, sessions, adoption score, momentum, and health status |
+### 7. `src/pages/ReportsHub.tsx`
+- Update CSV export header and row data: replace "Tier" with "Release", `m.tier` with `m.release`.
 
-### Technical Details
+### 8. `src/pages/DataManagement.tsx`
+- Update the customers.csv column description text from "tier" to "release".
 
-- Uses existing `TooltipProvider` / `Tooltip` / `TooltipTrigger` / `TooltipContent` from `@/components/ui/tooltip`
-- Uses `Info` icon from `lucide-react` (already a dependency)
-- Follows the same inline pattern used in `CustomerDrilldown.tsx` section headers
+### 9. `src/lib/calculations.ts`
+- Change `tier: cust?.tier || "Unknown"` to `release: cust?.release || "Unknown"` in `getCustomerMetrics()`.
+
+### 10. `src/lib/csv-parser.ts`
+- Update `parseCustomersCSV` to map `release` instead of `tier`.
 
