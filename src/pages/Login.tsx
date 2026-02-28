@@ -39,19 +39,33 @@ export default function Login() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
-      <div className="w-full max-w-sm mx-4">
-        <div className="bg-card border border-border rounded-2xl p-8 shadow-lg text-center">
-          <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-primary/10 mx-auto mb-6">
-            <Shield className="w-7 h-7 text-primary" />
+    <div className="relative flex items-center justify-center min-h-screen bg-background overflow-hidden">
+      {/* Grid dots */}
+      <div className="absolute inset-0 grid-dots opacity-40" />
+
+      {/* Animated orbs */}
+      <div className="orb orb-cyan w-[500px] h-[500px] -top-40 -left-40" />
+      <div className="orb orb-violet w-[400px] h-[400px] top-1/3 -right-32" />
+      <div className="orb orb-magenta w-[350px] h-[350px] -bottom-32 left-1/4" />
+
+      <div className="relative z-10 w-full max-w-sm mx-4">
+        <div className="glass-strong rounded-2xl p-8 text-center glow-cyan" style={{ animationDelay: '0s' }}>
+          {/* Icon with glow ring */}
+          <div className="flex items-center justify-center w-16 h-16 rounded-2xl mx-auto mb-6 glow-ring"
+               style={{ background: 'hsla(195, 100%, 50%, 0.12)' }}>
+            <Shield className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="text-xl font-bold text-foreground mb-1">PM Master Dashboard</h1>
+
+          {/* Gradient title */}
+          <h1 className="text-2xl font-extrabold mb-1 text-gradient-cyan">
+            PM Master Dashboard
+          </h1>
           <p className="text-sm text-muted-foreground mb-8">
-            Sign in to access the command center
+            Command your product universe ✦
           </p>
 
           {error && (
-            <div className="text-sm text-destructive bg-destructive/10 rounded-lg p-3 mb-4">
+            <div className="text-sm text-destructive bg-destructive/10 rounded-lg p-3 mb-4 border border-destructive/20">
               {error}
             </div>
           )}
@@ -59,12 +73,16 @@ export default function Login() {
           <Button
             onClick={handleGoogleSignIn}
             disabled={signingIn}
-            className="w-full h-11 font-semibold"
+            className="w-full h-12 font-semibold text-sm rounded-xl transition-all duration-300"
+            style={{
+              background: 'linear-gradient(135deg, hsl(195 100% 50%), hsl(220 80% 55%))',
+              boxShadow: '0 4px 20px hsla(195, 100%, 50%, 0.3)',
+            }}
           >
             {signingIn ? "Signing in..." : "Sign in with Google"}
           </Button>
 
-          <p className="text-xs text-muted-foreground mt-6">
+          <p className="text-xs text-muted-foreground mt-6 opacity-60">
             Access requires admin approval after first sign-in.
           </p>
         </div>

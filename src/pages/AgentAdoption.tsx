@@ -96,19 +96,29 @@ export default function AgentAdoption() {
 
   const hasRecords = filtered.length > 0;
 
+  const tooltipStyle = {
+    backgroundColor: "hsla(220, 30%, 8%, 0.9)",
+    backdropFilter: "blur(12px)",
+    border: "1px solid hsla(195, 100%, 50%, 0.2)",
+    borderRadius: "8px",
+    fontSize: "12px",
+    color: "hsl(210, 20%, 95%)",
+    boxShadow: "0 0 20px hsla(195, 100%, 50%, 0.1)",
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Agent Adoption</h1>
+          <h1 className="text-xl font-extrabold text-gradient-cyan">Agent Adoption</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Agent-level feature usage analysis</p>
         </div>
         {customers.length > 1 && (
           <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
-            <SelectTrigger className="w-48">
+            <SelectTrigger className="w-48 glass-strong border-glow-cyan">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="glass-strong border-glow-cyan">
               {customers.map(c => (
                 <SelectItem key={c} value={c}>{c}</SelectItem>
               ))}
@@ -118,7 +128,7 @@ export default function AgentAdoption() {
       </div>
 
       {/* Upload */}
-      <Card className="p-5 border bg-card">
+      <Card className="p-5">
         <div className="space-y-3">
           <div className="flex items-center gap-3">
             <label className="text-xs font-medium text-muted-foreground">Customer Name</label>
@@ -126,7 +136,7 @@ export default function AgentAdoption() {
               value={customerInput}
               onChange={e => setCustomerInput(e.target.value)}
               placeholder="e.g. Accela"
-              className="w-48 h-8 text-sm"
+              className="w-48 h-8 text-sm glass-strong border-glow-cyan"
             />
           </div>
           <UploadPanel
@@ -142,38 +152,34 @@ export default function AgentAdoption() {
         <>
           {/* KPI row */}
           <div className="grid grid-cols-3 gap-4">
-            <Card className="p-4 border bg-card">
-              <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-                <Users className="w-3.5 h-3.5" /> Total Agents
+            {[
+              { icon: <Users className="w-3.5 h-3.5" />, label: "Total Agents", value: agentLeaderboard.length },
+              { icon: <BarChart3 className="w-3.5 h-3.5" />, label: "Total Usage", value: filtered.reduce((s, r) => s + r.usageCount, 0).toLocaleString() },
+              { icon: <TrendingUp className="w-3.5 h-3.5" />, label: "Features Tracked", value: featureBreakdown.length },
+            ].map((kpi, i) => (
+              <div key={kpi.label} className="animate-slide-up" style={{ animationDelay: `${i * 0.1}s`, opacity: 0 }}>
+                <Card className="p-4">
+                  <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+                    <div className="text-primary">{kpi.icon}</div> {kpi.label}
+                  </div>
+                  <p className="text-2xl font-bold tabular-nums text-foreground" style={{ textShadow: '0 0 12px hsla(195, 100%, 50%, 0.2)' }}>
+                    {kpi.value}
+                  </p>
+                </Card>
               </div>
-              <p className="text-2xl font-bold tabular-nums text-foreground">{agentLeaderboard.length}</p>
-            </Card>
-            <Card className="p-4 border bg-card">
-              <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-                <BarChart3 className="w-3.5 h-3.5" /> Total Usage
-              </div>
-              <p className="text-2xl font-bold tabular-nums text-foreground">
-                {filtered.reduce((s, r) => s + r.usageCount, 0).toLocaleString()}
-              </p>
-            </Card>
-            <Card className="p-4 border bg-card">
-              <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-                <TrendingUp className="w-3.5 h-3.5" /> Features Tracked
-              </div>
-              <p className="text-2xl font-bold tabular-nums text-foreground">{featureBreakdown.length}</p>
-            </Card>
+            ))}
           </div>
 
           {/* Agent Leaderboard + Feature Breakdown */}
           <div className="grid grid-cols-2 gap-4">
-            <Card className="p-5 border bg-card">
+            <Card className="p-5 animate-slide-up" style={{ animationDelay: '0.3s', opacity: 0 }}>
               <h3 className="text-sm font-semibold text-card-foreground mb-4 flex items-center gap-2">
                 <Users className="w-4 h-4 text-primary" /> Agent Leaderboard
               </h3>
-              <div className="border rounded-lg overflow-hidden max-h-80 overflow-y-auto">
+              <div className="rounded-lg overflow-hidden max-h-80 overflow-y-auto border-glow-cyan">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-muted/50">
+                    <TableRow style={{ background: 'hsla(195, 100%, 50%, 0.04)' }}>
                       <TableHead className="text-xs">#</TableHead>
                       <TableHead className="text-xs">Agent</TableHead>
                       <TableHead className="text-xs text-right">Usage</TableHead>
@@ -182,7 +188,7 @@ export default function AgentAdoption() {
                   </TableHeader>
                   <TableBody>
                     {agentLeaderboard.map((a, i) => (
-                      <TableRow key={a.name}>
+                      <TableRow key={a.name} className="border-l-2 border-l-transparent hover:border-l-primary transition-all">
                         <TableCell className="text-sm text-muted-foreground">{i + 1}</TableCell>
                         <TableCell className="text-sm font-medium">{a.name}</TableCell>
                         <TableCell className="text-sm text-right tabular-nums">{a.totalUsage}</TableCell>
@@ -194,52 +200,48 @@ export default function AgentAdoption() {
               </div>
             </Card>
 
-            <Card className="p-5 border bg-card">
+            <Card className="p-5 animate-slide-up" style={{ animationDelay: '0.4s', opacity: 0 }}>
               <h3 className="text-sm font-semibold text-card-foreground mb-4 flex items-center gap-2">
                 <BarChart3 className="w-4 h-4 text-primary" /> Feature Breakdown
               </h3>
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={featureBreakdown} layout="vertical" margin={{ left: 10, right: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                  <YAxis dataKey="feature" type="category" width={120} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                  <Tooltip
-                    contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
-                  />
-                  <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsla(220, 20%, 16%, 0.6)" />
+                  <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(215, 15%, 55%)" }} />
+                  <YAxis dataKey="feature" type="category" width={120} tick={{ fontSize: 11, fill: "hsl(215, 15%, 55%)" }} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Bar dataKey="count" fill="hsl(195, 100%, 50%)" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </Card>
           </div>
 
           {/* Daily Trend */}
-          <Card className="p-5 border bg-card">
+          <Card className="p-5 animate-slide-up" style={{ animationDelay: '0.5s', opacity: 0 }}>
             <h3 className="text-sm font-semibold text-card-foreground mb-4 flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-primary" /> Usage Trend Over Time
             </h3>
             <ResponsiveContainer width="100%" height={240}>
               <LineChart data={dailyTrend} margin={{ left: 10, right: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                <Tooltip
-                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
-                />
-                <Line type="monotone" dataKey="usage" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsla(220, 20%, 16%, 0.6)" />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: "hsl(215, 15%, 55%)" }} />
+                <YAxis tick={{ fontSize: 11, fill: "hsl(215, 15%, 55%)" }} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Line type="monotone" dataKey="usage" stroke="hsl(195, 100%, 50%)" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </Card>
 
           {/* Heatmap */}
-          <Card className="p-5 border bg-card">
+          <Card className="p-5 animate-slide-up" style={{ animationDelay: '0.6s', opacity: 0 }}>
             <h3 className="text-sm font-semibold text-card-foreground mb-4 flex items-center gap-2">
               <Grid3X3 className="w-4 h-4 text-primary" /> Agent × Feature Matrix
             </h3>
             <div className="overflow-auto max-h-96">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead className="text-xs sticky left-0 bg-muted/50 z-10">Agent</TableHead>
+                  <TableRow style={{ background: 'hsla(195, 100%, 50%, 0.04)' }}>
+                    <TableHead className="text-xs sticky left-0 z-10" style={{ background: 'hsl(220, 30%, 8%)' }}>Agent</TableHead>
                     {heatmapData.features.map(f => (
                       <TableHead key={f} className="text-xs text-center whitespace-nowrap">{f}</TableHead>
                     ))}
@@ -248,16 +250,19 @@ export default function AgentAdoption() {
                 <TableBody>
                   {heatmapData.agents.map(agent => (
                     <TableRow key={agent}>
-                      <TableCell className="text-sm font-medium sticky left-0 bg-card z-10">{agent}</TableCell>
+                      <TableCell className="text-sm font-medium sticky left-0 z-10" style={{ background: 'hsl(220, 30%, 8%)' }}>{agent}</TableCell>
                       {heatmapData.features.map(f => {
                         const val = heatmapData.map.get(`${agent}|${f}`) || 0;
                         const intensity = val / maxHeatVal;
+                        // Cyan to violet gradient based on intensity
+                        const hue = 195 + intensity * 75; // 195 (cyan) → 270 (violet)
                         return (
                           <TableCell
                             key={f}
                             className="text-center text-xs tabular-nums"
                             style={{
-                              backgroundColor: val > 0 ? `hsla(var(--primary), ${0.1 + intensity * 0.5})` : undefined,
+                              backgroundColor: val > 0 ? `hsla(${hue}, 100%, 55%, ${0.1 + intensity * 0.4})` : undefined,
+                              textShadow: val > 0 ? `0 0 6px hsla(${hue}, 100%, 55%, 0.3)` : undefined,
                             }}
                           >
                             {val || "–"}
@@ -274,7 +279,7 @@ export default function AgentAdoption() {
       )}
 
       {!hasRecords && (
-        <Card className="p-12 border bg-card text-center">
+        <Card className="p-12 text-center">
           <p className="text-muted-foreground text-sm">Upload an Agent Adoption CSV above to see analytics.</p>
         </Card>
       )}
