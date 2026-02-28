@@ -1,80 +1,38 @@
 
-# Plan: Update Customer Names + Add Info Tooltips
 
-## 1. Update Mock Customer Names
+# Add Info Tooltips to Reports Hub
 
-Replace placeholder names in `src/lib/mock-data.ts` with real customer names:
+Add informational tooltips to the Reports Hub page to match the pattern already established on other pages.
 
-**Agent Helper (10 customers -- adding 2 more):**
-| Current | New |
-|---------|-----|
-| Acme Corp | JAMS Software |
-| TechFlow Inc | nCino |
-| GlobalServ | Accela |
-| DataBridge | Nozomi Networks |
-| CloudNine | Bluebeam |
-| ServiceMax | RainTree |
-| HelpDesk Pro | SUSE |
-| SupportWise | TechnologyOne |
+## Changes
 
-Add 2 new customers:
-- `ah-009`: Command Alkon (Starter tier, ~18 licensed users)
-- `ah-010`: (reserve slot or use existing 8 + 2 = 10 total AH customers)
+**File: `src/pages/ReportsHub.tsx`**
 
-Wait -- the user listed 9 AH customers: JAMS Software, nCino, Accela, Nozomi Networks, Bluebeam, RainTree, SUSE, TechnologyOne, Command Alkon. That's 9, but the spec says 8. I'll map all 9 by adding one more entry.
+Add tooltips to:
 
-**Case QA:**
-| Current | New |
-|---------|-----|
-| Acme Corp | Netskope |
+1. **Ranking Table section** -- Explain that the table ranks customers by adoption score (Reach 40% + Frequency 30% + Depth 30%) for the selected filters.
 
-## 2. Add Info Icon Tooltips
+2. **Comparison Chart section** -- Explain that the chart shows daily active user trends for the top 5 customers by adoption score.
 
-Add `lucide-react` `Info` icon tooltips to key metrics across pages to explain what each metric means. Using Radix `Tooltip` component already available.
+3. **Export CSV button area** -- Add a small info icon tooltip explaining what columns are included in the export.
 
-### Locations for info icons:
+### Implementation
 
-**Portfolio Overview (`Index.tsx`):**
-- KPI Cards: Add tooltip to each KPI title explaining the metric
-  - "Total Customers" -- Count of distinct customers in the selected filters
-  - "Active Users" -- Distinct users with at least one event in the date range
-  - "Avg Adoption Score" -- Weighted score: Reach (40%) + Frequency (30%) + Depth (30%)
-  - "Customers at Risk" -- Customers with health status Red (score < 40 or inactive 14+ days)
-
-**Customer Snapshot (`CustomerSnapshot.tsx`):**
-- KPI Cards: Same pattern with tooltips for Active Users, Sessions, DAU/WAU/MAU, Adoption Score, Momentum
-
-**Customer Drilldown (`CustomerDrilldown.tsx`):**
-- Reach/Frequency/Depth cards: Already have descriptions, add info icon
-- Section headers for Adoption Trends, Feature Usage, Session Analysis
-
-**KPICard Component (`KPICard.tsx`):**
-- Add optional `tooltip` prop that renders an Info icon with a Radix Tooltip beside the title
-
-### Technical Approach
-
-**Files to modify:**
-1. **`src/lib/mock-data.ts`** -- Update `AGENT_HELPER_CUSTOMERS` array (9 entries) and `CASE_QA_CUSTOMERS` (Netskope). Update `CASE_QA_CUSTOMERS` id reference if needed.
-
-2. **`src/components/dashboard/KPICard.tsx`** -- Add optional `tooltip?: string` prop. When present, render an `Info` icon from lucide-react wrapped in a Radix `Tooltip`.
-
-3. **`src/pages/Index.tsx`** -- Pass `tooltip` strings to each KPICard.
-
-4. **`src/pages/CustomerSnapshot.tsx`** -- Pass `tooltip` strings to each KPICard.
-
-5. **`src/pages/CustomerDrilldown.tsx`** -- Add info icons to section headers (Adoption Trends, Feature Usage, Session Analysis) and the Reach/Frequency/Depth cards using inline Tooltip wrappers.
+- Import `Info`, `Tooltip`, `TooltipProvider`, `TooltipTrigger`, `TooltipContent` (same pattern as CustomerDrilldown)
+- Add inline tooltip icons next to the "Ranking Table" and "Comparison Chart" tab content headers
+- Add tooltip next to the "Top 5 Customers" chart title
 
 ### Tooltip Content
 
-| Metric | Tooltip |
-|--------|---------|
-| Total Customers | Number of distinct customers with events in the selected date range and filters |
-| Active Users | Distinct users who triggered at least one event in the selected period |
-| Avg Adoption Score | Weighted average: Reach (40%) + Frequency (30%) + Depth (30%), scale 0-100 |
-| Customers at Risk | Customers with Red health: adoption score below 40 or no activity for 14+ days |
-| Sessions | Distinct session IDs recorded in the selected period |
-| DAU / WAU / MAU | Daily, Weekly (7-day), and Monthly (30-day) active unique users |
-| Momentum | Week-over-week percentage change in adoption score |
-| Reach | Active users divided by licensed users (40% of adoption score) |
-| Frequency | Sessions per active user, normalized (30% of adoption score) |
-| Depth | Distinct core actions used, normalized (30% of adoption score) |
+| Location | Tooltip Text |
+|----------|-------------|
+| Ranking Table header | Customers ranked by adoption score. Score = Reach (40%) + Frequency (30%) + Depth (30%) |
+| Comparison Chart title | Daily active user trends for the top 5 customers by adoption score |
+| Export CSV | Exports customer, product, tier, active users, sessions, adoption score, momentum, and health status |
+
+### Technical Details
+
+- Uses existing `TooltipProvider` / `Tooltip` / `TooltipTrigger` / `TooltipContent` from `@/components/ui/tooltip`
+- Uses `Info` icon from `lucide-react` (already a dependency)
+- Follows the same inline pattern used in `CustomerDrilldown.tsx` section headers
+
