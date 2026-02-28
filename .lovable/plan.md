@@ -1,28 +1,34 @@
 
+# Fix Pinned Definition Cards Layout
 
-# Smooth Page Transition Animations
+The pinned definition panels in Snapshot Mode are rendering inside the KPI card's title flex row, causing overlap and text truncation. Two changes fix this:
 
-Add a fade + subtle slide-up transition when navigating between sidebar pages, using a wrapper component keyed on the current route.
+## 1. Move pinned definition below KPI content (`src/components/dashboard/KPICard.tsx`)
 
-## Approach
+Currently, `MetricInfoCard` sits inline in the title's `flex items-center` row. In Snapshot Mode, the pinned panel expands but gets constrained by the flex layout.
 
-Create a `PageTransition` wrapper component that uses `useLocation()` to detect route changes and applies a CSS fade-in + slide-up animation each time the route key changes. This is lightweight (no extra dependencies) and uses the existing `slide-up` keyframe already defined in the project.
+**Fix**: Render `MetricInfoCard` in two places conditionally:
+- In normal mode: keep the info icon inline in the title row (current behavior)
+- In Snapshot Mode: move the pinned definition panel below the entire KPI content block, as a full-width child of the card
 
-## Changes
+This means the KPI card structure changes to:
+```
+<card>
+  <flex row>  (title + value + icon + trend -- unchanged)
+  </flex row>
+  {isSnapshotMode && <MetricInfoCard />}  (full-width, below content)
+</card>
+```
 
-### 1. Create `src/components/layout/PageTransition.tsx`
+## 2. Ensure pinned panel has proper sizing (`src/components/dashboard/MetricInfoCard.tsx`)
 
-A small wrapper component that:
-- Takes `children` and a `locationKey` prop
-- Applies the `animate-slide-up` class (already defined: translateY(20px) + opacity 0 to normal, 0.5s)
-- Uses the React `key` prop set to `locationKey` so React re-mounts the wrapper on each route change, retriggering the animation
-- Respects `prefers-reduced-motion` by skipping animation (already handled in existing CSS)
+Add `overflow-visible` and `w-full` to the pinned panel container so text wraps cleanly instead of truncating. Also add `break-words` for long formula text.
 
-### 2. Modify `src/components/layout/DashboardLayout.tsx`
+## Files Modified
 
-- Import `PageTransition`
-- Wrap `{children}` (inside the SnapshotFrame) with `<PageTransition locationKey={location.pathname}>`
-- This ensures every page navigation triggers a smooth fade-in slide-up
+| File | Change |
+|------|--------|
+| `src/components/dashboard/KPICard.tsx` | Move MetricInfoCard rendering: icon stays inline in normal mode, pinned panel renders below content in snapshot mode |
+| `src/components/dashboard/MetricInfoCard.tsx` | Add `w-full`, `break-words`, and `overflow-visible` to pinned panel; ensure text wraps cleanly |
 
-No new dependencies. No changes to routing logic or data flow.
-
+No new dependencies. No logic changes.
