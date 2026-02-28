@@ -16,7 +16,7 @@ interface DataContextType {
   hasData: boolean;
 }
 
-const DataContext = createContext<DataContextType | null>(null);
+const DataContext = createContext<DataContextType | undefined>(undefined);
 
 function getDefaultDateRange(days: number, label: string): DateRange {
   const to = new Date();
@@ -69,6 +69,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
 export function useData() {
   const ctx = useContext(DataContext);
-  if (!ctx) throw new Error("useData must be used within DataProvider");
+  if (ctx === undefined) throw new Error("useData must be used within DataProvider");
   return ctx;
 }
