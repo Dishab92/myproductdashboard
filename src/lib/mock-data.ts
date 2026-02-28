@@ -16,10 +16,36 @@ const CASE_QA_CUSTOMERS = [
   { id: "cq-001", name: "Netskope", release: "Q3:2024", licensed: 30, cs: "Sarah Chen" },
 ];
 
-const AH_FEATURES = [
-  "Smart Suggest", "KB Search", "Response Draft", "Escalation Assist",
-  "Sentiment Detect", "Macro Builder", "Ticket Tagging", "SLA Alert",
-  "Customer Context", "Quick Reply"
+const AH_FEATURE_WEIGHTS: { feature: string; weight: number; events: string[] }[] = [
+  {
+    feature: "Case Summary", weight: 35,
+    events: ["Clicked on brief case summary", "Clicked on detailed case summary", "Time taken to generate summary"],
+  },
+  {
+    feature: "Case Timeline", weight: 28,
+    events: ["Clicked on preview icon"],
+  },
+  {
+    feature: "Response Assist", weight: 20,
+    events: [
+      "Response generated on first load of response-assist", "Clicked on Response Assist tab",
+      "No. of times Regenerate Response clicked", "Tonality model opened",
+      "No. of times Copy to Clipboard clicked", "Tone for response assist saved",
+      "Time taken to generate response",
+    ],
+  },
+  {
+    feature: "Top Articles", weight: 9,
+    events: ["Clicked on Top Articles tab"],
+  },
+  {
+    feature: "Top Related Cases", weight: 5,
+    events: ["Clicked on Top Related Cases tab"],
+  },
+  {
+    feature: "Top Experts", weight: 3,
+    events: ["Clicked on Top Experts tab"],
+  },
 ];
 
 const CQ_FEATURES = [
@@ -27,17 +53,24 @@ const CQ_FEATURES = [
   "Audit Trail", "Parameter Check", "Grade Override", "Report Export"
 ];
 
-const AH_EVENTS = [
-  "suggestion_shown", "suggestion_accepted", "kb_search", "draft_generated",
-  "escalation_triggered", "sentiment_flagged", "macro_used", "ticket_tagged",
-  "context_viewed", "reply_sent", "session_start", "session_end"
-];
-
 const CQ_EVENTS = [
   "case_opened", "score_submitted", "coaching_added", "calibration_started",
   "audit_viewed", "parameter_checked", "grade_overridden", "report_exported",
   "session_start", "session_end"
 ];
+
+function weightedRandomFeature(rng: () => number): { feature: string; event: string } {
+  const totalWeight = AH_FEATURE_WEIGHTS.reduce((s, f) => s + f.weight, 0);
+  let r = rng() * totalWeight;
+  for (const fw of AH_FEATURE_WEIGHTS) {
+    r -= fw.weight;
+    if (r <= 0) {
+      return { feature: fw.feature, event: randomFrom(fw.events, rng) };
+    }
+  }
+  const last = AH_FEATURE_WEIGHTS[AH_FEATURE_WEIGHTS.length - 1];
+  return { feature: last.feature, event: randomFrom(last.events, rng) };
+}
 
 function seededRandom(seed: number) {
   let s = seed;
@@ -78,8 +111,7 @@ export function generateMockEvents(): EventRecord[] {
           const eventTime = new Date(d);
           eventTime.setHours(hour, min, Math.floor(rng() * 60));
           
-          const eventName = randomFrom(AH_EVENTS, rng);
-          const feature = randomFrom(AH_FEATURES, rng);
+          const { feature, event: eventName } = weightedRandomFeature(rng);
           
           events.push({
             event_time: new Date(eventTime),
