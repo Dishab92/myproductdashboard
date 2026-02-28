@@ -9,6 +9,7 @@ import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { DefinitionsDictionary } from "@/components/dashboard/DefinitionsDictionary";
 import { SnapshotToolbar } from "@/components/layout/SnapshotToolbar";
 import { SnapshotFrame } from "@/components/layout/SnapshotFrame";
+import { PageTransition } from "@/components/layout/PageTransition";
 import { useSnapshot } from "@/context/SnapshotContext";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -116,7 +117,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <div className="orb orb-magenta w-[200px] h-[200px] top-1/2 left-1/2 opacity-10" />
           <div className="relative z-10" ref={contentRef}>
             <SnapshotFrame>
-              {children}
+              <PageTransition locationKey={location.pathname}>
+                {children}
+              </PageTransition>
             </SnapshotFrame>
           </div>
         </main>
