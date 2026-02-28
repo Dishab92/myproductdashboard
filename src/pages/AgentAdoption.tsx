@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useData } from "@/context/DataContext";
+import { useSnapshot } from "@/context/SnapshotContext";
 import { parseAgentAdoptionCSV } from "@/lib/csv-parser";
 import { UploadPanel } from "@/components/dashboard/UploadPanel";
 import { Card } from "@/components/ui/card";
@@ -11,6 +12,7 @@ import { Users, BarChart3, TrendingUp, Grid3X3 } from "lucide-react";
 
 export default function AgentAdoption() {
   const { data, setAgentAdoption } = useData();
+  const { isSnapshotMode } = useSnapshot();
   const [customerInput, setCustomerInput] = useState("Accela");
   const [uploadResult, setUploadResult] = useState<{ success: boolean; message: string } | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState("All");
@@ -97,13 +99,13 @@ export default function AgentAdoption() {
   const hasRecords = filtered.length > 0;
 
   const tooltipStyle = {
-    backgroundColor: "hsla(220, 30%, 8%, 0.9)",
+    backgroundColor: "hsl(var(--card))",
     backdropFilter: "blur(12px)",
-    border: "1px solid hsla(195, 100%, 50%, 0.2)",
+    border: "1px solid hsla(var(--primary), 0.2)",
     borderRadius: "8px",
     fontSize: "12px",
-    color: "hsl(210, 20%, 95%)",
-    boxShadow: "0 0 20px hsla(195, 100%, 50%, 0.1)",
+    color: "hsl(var(--foreground))",
+    boxShadow: "0 0 20px hsla(var(--primary), 0.1)",
   };
 
   return (
@@ -127,26 +129,28 @@ export default function AgentAdoption() {
         )}
       </div>
 
-      {/* Upload */}
-      <Card className="p-5">
-        <div className="space-y-3">
-          <div className="flex items-center gap-3">
-            <label className="text-xs font-medium text-muted-foreground">Customer Name</label>
-            <Input
-              value={customerInput}
-              onChange={e => setCustomerInput(e.target.value)}
-              placeholder="e.g. Accela"
-              className="w-48 h-8 text-sm glass-strong border-glow-cyan"
+      {/* Upload - hidden in snapshot mode */}
+      {!isSnapshotMode && (
+        <Card className="p-5">
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <label className="text-xs font-medium text-muted-foreground">Customer Name</label>
+              <Input
+                value={customerInput}
+                onChange={e => setCustomerInput(e.target.value)}
+                placeholder="e.g. Accela"
+                className="w-48 h-8 text-sm glass-strong border-glow-cyan"
+              />
+            </div>
+            <UploadPanel
+              title="Agent Adoption CSV"
+              description="Columns: Date (DD-MM-YYYY), Agent Name, Feature Used, Usage Count"
+              onUpload={handleUpload}
+              result={uploadResult}
             />
           </div>
-          <UploadPanel
-            title="Agent Adoption CSV"
-            description="Columns: Date (DD-MM-YYYY), Agent Name, Feature Used, Usage Count"
-            onUpload={handleUpload}
-            result={uploadResult}
-          />
-        </div>
-      </Card>
+        </Card>
+      )}
 
       {hasRecords && (
         <>
@@ -162,7 +166,7 @@ export default function AgentAdoption() {
                   <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
                     <div className="text-primary">{kpi.icon}</div> {kpi.label}
                   </div>
-                  <p className="text-2xl font-bold tabular-nums text-foreground" style={{ textShadow: '0 0 12px hsla(195, 100%, 50%, 0.2)' }}>
+                  <p className="text-2xl font-bold tabular-nums text-foreground">
                     {kpi.value}
                   </p>
                 </Card>
@@ -179,7 +183,7 @@ export default function AgentAdoption() {
               <div className="rounded-lg overflow-hidden max-h-80 overflow-y-auto border-glow-cyan">
                 <Table>
                   <TableHeader>
-                    <TableRow style={{ background: 'hsla(195, 100%, 50%, 0.04)' }}>
+                    <TableRow className="bg-muted/30">
                       <TableHead className="text-xs">#</TableHead>
                       <TableHead className="text-xs">Agent</TableHead>
                       <TableHead className="text-xs text-right">Usage</TableHead>
@@ -206,11 +210,11 @@ export default function AgentAdoption() {
               </h3>
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={featureBreakdown} layout="vertical" margin={{ left: 10, right: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsla(220, 20%, 16%, 0.6)" />
-                  <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(215, 15%, 55%)" }} />
-                  <YAxis dataKey="feature" type="category" width={120} tick={{ fontSize: 11, fill: "hsl(215, 15%, 55%)" }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsla(var(--border), 0.6)" />
+                  <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                  <YAxis dataKey="feature" type="category" width={120} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                   <Tooltip contentStyle={tooltipStyle} />
-                  <Bar dataKey="count" fill="hsl(195, 100%, 50%)" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </Card>
@@ -223,11 +227,11 @@ export default function AgentAdoption() {
             </h3>
             <ResponsiveContainer width="100%" height={240}>
               <LineChart data={dailyTrend} margin={{ left: 10, right: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsla(220, 20%, 16%, 0.6)" />
-                <XAxis dataKey="date" tick={{ fontSize: 11, fill: "hsl(215, 15%, 55%)" }} />
-                <YAxis tick={{ fontSize: 11, fill: "hsl(215, 15%, 55%)" }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsla(var(--border), 0.6)" />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Line type="monotone" dataKey="usage" stroke="hsl(195, 100%, 50%)" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="usage" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </Card>
@@ -240,8 +244,8 @@ export default function AgentAdoption() {
             <div className="overflow-auto max-h-96">
               <Table>
                 <TableHeader>
-                  <TableRow style={{ background: 'hsla(195, 100%, 50%, 0.04)' }}>
-                    <TableHead className="text-xs sticky left-0 z-10" style={{ background: 'hsl(220, 30%, 8%)' }}>Agent</TableHead>
+                  <TableRow className="bg-muted/30">
+                    <TableHead className="text-xs sticky left-0 z-10 bg-card">Agent</TableHead>
                     {heatmapData.features.map(f => (
                       <TableHead key={f} className="text-xs text-center whitespace-nowrap">{f}</TableHead>
                     ))}
@@ -250,19 +254,17 @@ export default function AgentAdoption() {
                 <TableBody>
                   {heatmapData.agents.map(agent => (
                     <TableRow key={agent}>
-                      <TableCell className="text-sm font-medium sticky left-0 z-10" style={{ background: 'hsl(220, 30%, 8%)' }}>{agent}</TableCell>
+                      <TableCell className="text-sm font-medium sticky left-0 z-10 bg-card">{agent}</TableCell>
                       {heatmapData.features.map(f => {
                         const val = heatmapData.map.get(`${agent}|${f}`) || 0;
                         const intensity = val / maxHeatVal;
-                        // Cyan to violet gradient based on intensity
-                        const hue = 195 + intensity * 75; // 195 (cyan) → 270 (violet)
+                        const hue = 195 + intensity * 75;
                         return (
                           <TableCell
                             key={f}
                             className="text-center text-xs tabular-nums"
                             style={{
                               backgroundColor: val > 0 ? `hsla(${hue}, 100%, 55%, ${0.1 + intensity * 0.4})` : undefined,
-                              textShadow: val > 0 ? `0 0 6px hsla(${hue}, 100%, 55%, 0.3)` : undefined,
                             }}
                           >
                             {val || "–"}

@@ -36,11 +36,9 @@
 
     --radius: 0.5rem;
 
-    /* Neon accent extras */
     --neon-violet: 270 100% 65%;
     --neon-magenta: 330 100% 60%;
 
-    /* Health tokens – neon style */
     --health-green: 152 80% 50%;
     --health-green-bg: 152 80% 12%;
     --health-amber: 38 100% 55%;
@@ -48,7 +46,6 @@
     --health-red: 0 80% 55%;
     --health-red-bg: 0 80% 12%;
 
-    /* Chart neon palette */
     --chart-1: 195 100% 50%;
     --chart-2: 270 100% 65%;
     --chart-3: 330 100% 60%;
@@ -67,6 +64,64 @@
     --sidebar-border: 220 20% 12%;
     --sidebar-ring: 195 100% 50%;
   }
+
+  .light {
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 195 90% 40%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 20% 25%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 270 70% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 195 90% 40%;
+
+    --neon-violet: 270 70% 55%;
+    --neon-magenta: 330 70% 55%;
+
+    --health-green: 152 60% 38%;
+    --health-green-bg: 152 40% 95%;
+    --health-amber: 38 85% 48%;
+    --health-amber-bg: 38 60% 95%;
+    --health-red: 0 65% 48%;
+    --health-red-bg: 0 50% 95%;
+
+    --chart-1: 195 90% 40%;
+    --chart-2: 270 70% 55%;
+    --chart-3: 330 70% 55%;
+    --chart-4: 220 70% 50%;
+    --chart-5: 38 85% 48%;
+
+    --surface-elevated: 0 0% 100%;
+    --surface-sunken: 220 14% 96%;
+
+    --sidebar-background: 220 14% 96%;
+    --sidebar-foreground: 215 16% 47%;
+    --sidebar-primary: 195 90% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 92%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 195 90% 40%;
+  }
 }
 
 @layer base {
@@ -76,6 +131,7 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 }
 
@@ -84,13 +140,23 @@
   .glass {
     @apply backdrop-blur-xl border;
     background: hsla(var(--card), 0.6);
-    border-color: hsla(210, 20%, 95%, 0.08);
+    border-color: hsla(var(--border), 0.5);
   }
   .glass-strong {
     @apply backdrop-blur-2xl border;
     background: hsla(var(--card), 0.8);
-    border-color: hsla(210, 20%, 95%, 0.12);
+    border-color: hsla(var(--border), 0.6);
   }
+
+  .light .glass {
+    background: hsla(var(--card), 0.9);
+    box-shadow: 0 1px 3px hsla(0, 0%, 0%, 0.06);
+  }
+  .light .glass-strong {
+    background: hsla(var(--card), 0.95);
+    box-shadow: 0 2px 8px hsla(0, 0%, 0%, 0.08);
+  }
+
   .glow-cyan {
     box-shadow: 0 0 20px hsla(var(--primary), 0.25), 0 0 60px hsla(var(--primary), 0.08);
   }
@@ -100,21 +166,25 @@
   .glow-amber {
     box-shadow: 0 0 20px hsla(var(--health-amber), 0.3), 0 0 60px hsla(var(--health-amber), 0.1);
   }
+
+  .light .glow-cyan,
+  .light .glow-violet,
+  .light .glow-amber {
+    box-shadow: 0 2px 12px hsla(0, 0%, 0%, 0.08);
+  }
+
   .text-gradient-cyan {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--neon-violet)));
+    background-image: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
   }
   .text-health-green {
     color: hsl(var(--health-green));
-    text-shadow: 0 0 8px hsla(var(--health-green), 0.4);
   }
   .text-health-amber {
     color: hsl(var(--health-amber));
-    text-shadow: 0 0 8px hsla(var(--health-amber), 0.4);
   }
   .text-health-red {
     color: hsl(var(--health-red));
-    text-shadow: 0 0 8px hsla(var(--health-red), 0.4);
   }
   .bg-health-green {
     background-color: hsl(var(--health-green-bg));
@@ -132,6 +202,10 @@
     border: 1px solid hsla(var(--primary), 0.3);
     box-shadow: inset 0 1px 0 hsla(var(--primary), 0.1);
   }
+  .light .border-glow-cyan {
+    border: 1px solid hsla(var(--primary), 0.2);
+    box-shadow: none;
+  }
 }
 
 /* ========== Animated Background Orbs ========== */
@@ -143,16 +217,20 @@
   pointer-events: none;
 }
 .orb-cyan {
-  background: radial-gradient(circle, hsl(195 100% 50% / 0.5), transparent 70%);
+  background: radial-gradient(circle, hsla(var(--primary), 0.5), transparent 70%);
   animation: orb-drift-1 25s ease-in-out infinite;
 }
 .orb-violet {
-  background: radial-gradient(circle, hsl(270 100% 65% / 0.4), transparent 70%);
+  background: radial-gradient(circle, hsla(var(--neon-violet), 0.4), transparent 70%);
   animation: orb-drift-2 30s ease-in-out infinite;
 }
 .orb-magenta {
-  background: radial-gradient(circle, hsl(330 100% 60% / 0.3), transparent 70%);
+  background: radial-gradient(circle, hsla(var(--neon-magenta), 0.3), transparent 70%);
   animation: orb-drift-3 20s ease-in-out infinite;
+}
+
+.light .orb {
+  opacity: 0.08;
 }
 
 @keyframes orb-drift-1 {
@@ -177,7 +255,7 @@
   background-size: 24px 24px;
 }
 
-/* Glow ring animation for icons */
+/* Glow ring animation */
 .glow-ring {
   position: relative;
 }
@@ -207,12 +285,16 @@
   left: -100%;
   width: 100%;
   height: 2px;
-  background: linear-gradient(90deg, transparent, hsl(var(--primary)), hsl(var(--neon-violet)), transparent);
+  background: linear-gradient(90deg, transparent, hsl(var(--primary)), hsl(var(--accent)), transparent);
   animation: shimmer 3s ease-in-out infinite;
 }
 @keyframes shimmer {
   0% { left: -100%; }
   100% { left: 100%; }
+}
+
+.light .shimmer-border::after {
+  opacity: 0.4;
 }
 
 /* Scanning line */
@@ -229,4 +311,15 @@
   0% { top: 0; opacity: 0; }
   50% { opacity: 1; }
   100% { top: 100%; opacity: 0; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .orb, .shimmer-border::after, .scan-line::after, .glow-ring::before {
+    animation: none !important;
+  }
+  .animate-slide-up, .animate-glow-pulse, .animate-float {
+    animation: none !important;
+    opacity: 1 !important;
+  }
 }

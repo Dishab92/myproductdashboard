@@ -3,19 +3,14 @@ import { useData } from "@/context/DataContext";
 import { FilterBar } from "@/components/dashboard/FilterBar";
 import { CustomerTable } from "@/components/dashboard/CustomerTable";
 import { TrendLineChart } from "@/components/dashboard/TrendLineChart";
+import { MetricInfoCard } from "@/components/dashboard/MetricInfoCard";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   filterEventsByDateRange, filterEventsByProduct, getCustomerMetrics, getDailyMetrics
 } from "@/lib/calculations";
-import { Download, Info } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Download } from "lucide-react";
 
 export default function ReportsHub() {
   const { data, dateRange, productFilter, hasData } = useData();
@@ -64,18 +59,15 @@ export default function ReportsHub() {
     <div className="p-6 space-y-6 max-w-[1400px]">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Reports Hub</h1>
+          <h1 className="text-xl font-extrabold text-gradient-cyan">Reports Hub</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Cross-customer analysis and export</p>
         </div>
         <div className="flex items-center gap-3">
           <FilterBar />
-          <div className="flex items-center gap-1.5">
-            <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5" onClick={exportCSV}>
-              <Download className="w-3.5 h-3.5" />
-              Export CSV
-            </Button>
-            <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground/60 cursor-help" /></TooltipTrigger><TooltipContent side="bottom" className="max-w-[240px] text-xs">Exports customer, product, release, active users, sessions, adoption score, momentum, and health status</TooltipContent></Tooltip></TooltipProvider>
-          </div>
+          <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5" onClick={exportCSV}>
+            <Download className="w-3.5 h-3.5" />
+            Export CSV
+          </Button>
         </div>
       </div>
 
@@ -87,23 +79,23 @@ export default function ReportsHub() {
         <TabsContent value="ranking" className="mt-4">
           <div className="flex items-center gap-1.5 mb-3">
             <h3 className="text-sm font-semibold text-foreground">Customer Ranking by Adoption Score</h3>
-            <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground/60 cursor-help" /></TooltipTrigger><TooltipContent side="top" className="max-w-[240px] text-xs">Customers ranked by adoption score. Score = Reach (40%) + Frequency (30%) + Depth (30%)</TooltipContent></Tooltip></TooltipProvider>
+            <MetricInfoCard metricId="adoption_score" />
           </div>
           <CustomerTable customers={metrics} />
         </TabsContent>
         <TabsContent value="comparison" className="mt-4">
-          <Card className="p-5 border bg-card">
+          <Card className="p-5">
             <div className="flex items-center gap-1.5 mb-4">
               <h3 className="text-sm font-semibold text-card-foreground">
                 Top 5 Customers – Active Users Over Time
               </h3>
-              <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground/60 cursor-help" /></TooltipTrigger><TooltipContent side="top" className="max-w-[240px] text-xs">Daily active user trends for the top 5 customers by adoption score</TooltipContent></Tooltip></TooltipProvider>
+              <MetricInfoCard metricId="active_users" />
             </div>
             {comparisonData.length > 0 && comparisonData[0].daily.length > 0 ? (
               <TrendLineChart
                 data={comparisonData[0].daily}
                 lines={[
-                  { key: "activeUsers", color: "hsl(173, 58%, 39%)", label: comparisonData[0]?.name || "" },
+                  { key: "activeUsers", color: "hsl(var(--primary))", label: comparisonData[0]?.name || "" },
                 ]}
               />
             ) : (
@@ -112,8 +104,8 @@ export default function ReportsHub() {
             <div className="mt-4 flex gap-3 flex-wrap">
               {comparisonData.map((c, i) => {
                 const colors = [
-                  "hsl(173, 58%, 39%)", "hsl(220, 70%, 55%)", "hsl(262, 52%, 55%)",
-                  "hsl(38, 92%, 50%)", "hsl(340, 65%, 55%)"
+                  "hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))",
+                  "hsl(var(--chart-4))", "hsl(var(--chart-5))"
                 ];
                 return (
                   <span key={c.name} className="text-xs flex items-center gap-1.5">
