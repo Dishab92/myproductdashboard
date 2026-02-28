@@ -9,7 +9,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   filterEventsByDateRange, filterEventsByProduct, getCustomerMetrics, getDailyMetrics
 } from "@/lib/calculations";
-import { Download } from "lucide-react";
+import { Download, Info } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function ReportsHub() {
   const { data, dateRange, productFilter, hasData } = useData();
@@ -37,11 +43,9 @@ export default function ReportsHub() {
     URL.revokeObjectURL(url);
   };
 
-  // For comparison chart, show top 5 customers daily
   const comparisonData = useMemo(() => {
     if (metrics.length === 0) return [];
     const top5 = metrics.slice(0, 5);
-    // Just show adoption scores as comparison
     return top5.map(m => {
       let events = filterEventsByDateRange(data.events, dateRange.from, dateRange.to);
       events = events.filter(e => e.customer_id === m.customer_id);
@@ -65,10 +69,13 @@ export default function ReportsHub() {
         </div>
         <div className="flex items-center gap-3">
           <FilterBar />
-          <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5" onClick={exportCSV}>
-            <Download className="w-3.5 h-3.5" />
-            Export CSV
-          </Button>
+          <div className="flex items-center gap-1.5">
+            <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5" onClick={exportCSV}>
+              <Download className="w-3.5 h-3.5" />
+              Export CSV
+            </Button>
+            <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground/60 cursor-help" /></TooltipTrigger><TooltipContent side="bottom" className="max-w-[240px] text-xs">Exports customer, product, tier, active users, sessions, adoption score, momentum, and health status</TooltipContent></Tooltip></TooltipProvider>
+          </div>
         </div>
       </div>
 
@@ -78,13 +85,20 @@ export default function ReportsHub() {
           <TabsTrigger value="comparison">Comparison Chart</TabsTrigger>
         </TabsList>
         <TabsContent value="ranking" className="mt-4">
-          <CustomerTable customers={metrics} title="Customer Ranking by Adoption Score" />
+          <div className="flex items-center gap-1.5 mb-3">
+            <h3 className="text-sm font-semibold text-foreground">Customer Ranking by Adoption Score</h3>
+            <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground/60 cursor-help" /></TooltipTrigger><TooltipContent side="top" className="max-w-[240px] text-xs">Customers ranked by adoption score. Score = Reach (40%) + Frequency (30%) + Depth (30%)</TooltipContent></Tooltip></TooltipProvider>
+          </div>
+          <CustomerTable customers={metrics} />
         </TabsContent>
         <TabsContent value="comparison" className="mt-4">
           <Card className="p-5 border bg-card">
-            <h3 className="text-sm font-semibold text-card-foreground mb-4">
-              Top 5 Customers – Active Users Over Time
-            </h3>
+            <div className="flex items-center gap-1.5 mb-4">
+              <h3 className="text-sm font-semibold text-card-foreground">
+                Top 5 Customers – Active Users Over Time
+              </h3>
+              <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground/60 cursor-help" /></TooltipTrigger><TooltipContent side="top" className="max-w-[240px] text-xs">Daily active user trends for the top 5 customers by adoption score</TooltipContent></Tooltip></TooltipProvider>
+            </div>
             {comparisonData.length > 0 && comparisonData[0].daily.length > 0 ? (
               <TrendLineChart
                 data={comparisonData[0].daily}
