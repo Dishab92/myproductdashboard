@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { TrendBadge } from "./TrendBadge";
 import { MetricInfoCard } from "./MetricInfoCard";
+import { useSnapshot } from "@/context/SnapshotContext";
 
 interface KPICardProps {
   title: string;
@@ -13,8 +14,11 @@ interface KPICardProps {
 }
 
 export function KPICard({ title, value, subtitle, trend, icon, tooltip, metricId }: KPICardProps) {
+  const { isSnapshotMode, options } = useSnapshot();
+  const showPinnedDefinition = isSnapshotMode && options.includeDefinitions && metricId;
+
   return (
-    <div className="glass-strong rounded-lg p-5 border-glow-cyan shimmer-border group hover:scale-[1.02] transition-all duration-300"
+    <div className="glass-strong rounded-lg p-5 border-glow-cyan shimmer-border group hover:scale-[1.02] transition-all duration-300 overflow-visible"
          style={{ boxShadow: '0 0 0 0 hsla(var(--primary), 0)' }}
          onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 0 25px hsla(var(--primary), 0.15), 0 8px 32px hsla(0,0%,0%,0.3)')}
          onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 0 0 0 hsla(var(--primary), 0)')}>
@@ -22,7 +26,7 @@ export function KPICard({ title, value, subtitle, trend, icon, tooltip, metricId
         <div className="space-y-1">
           <div className="flex items-center gap-1.5">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
-            {metricId && <MetricInfoCard metricId={metricId} />}
+            {metricId && !showPinnedDefinition && <MetricInfoCard metricId={metricId} />}
           </div>
           <p className="text-2xl font-bold text-card-foreground">{value}</p>
           {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
@@ -36,6 +40,7 @@ export function KPICard({ title, value, subtitle, trend, icon, tooltip, metricId
           {trend !== undefined && <TrendBadge value={trend} />}
         </div>
       </div>
+      {showPinnedDefinition && <MetricInfoCard metricId={metricId} />}
     </div>
   );
 }
