@@ -57,6 +57,21 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        health: {
+          green: "hsl(var(--health-green))",
+          "green-bg": "hsl(var(--health-green-bg))",
+          amber: "hsl(var(--health-amber))",
+          "amber-bg": "hsl(var(--health-amber-bg))",
+          red: "hsl(var(--health-red))",
+          "red-bg": "hsl(var(--health-red-bg))",
+        },
+        chart: {
+          1: "hsl(var(--chart-1))",
+          2: "hsl(var(--chart-2))",
+          3: "hsl(var(--chart-3))",
+          4: "hsl(var(--chart-4))",
+          5: "hsl(var(--chart-5))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

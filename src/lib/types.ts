@@ -1,0 +1,82 @@
+export interface EventRecord {
+  event_time: Date;
+  customer_id: string;
+  customer_name: string;
+  product: "Agent Helper" | "Case QA";
+  user_id: string;
+  session_id: string;
+  event_name: string;
+  feature: string;
+  case_id?: string;
+  channel?: string;
+  metadata_json?: string;
+}
+
+export interface CustomerRecord {
+  customer_id: string;
+  customer_name: string;
+  tier: string;
+  go_live_date: Date;
+  licensed_users: number;
+  cs_owner: string;
+}
+
+export interface ScoreRecord {
+  event_time: Date;
+  customer_id: string;
+  case_id: string;
+  score_overall: number;
+  grade: string;
+  parameters_json?: string;
+}
+
+export type HealthStatus = "green" | "amber" | "red";
+
+export interface CustomerMetrics {
+  customer_id: string;
+  customer_name: string;
+  product: string;
+  products: string[];
+  tier: string;
+  activeUsers: number;
+  totalSessions: number;
+  dau: number;
+  wau: number;
+  mau: number;
+  adoptionScore: number;
+  momentum: number;
+  health: HealthStatus;
+  lastActivity: Date | null;
+  licensedUsers: number;
+  reach: number;
+  frequency: number;
+  depth: number;
+}
+
+export interface FeatureUsage {
+  feature: string;
+  totalClicks: number;
+  uniqueUsers: number;
+  percentOfTotal: number;
+  trend: number;
+}
+
+export interface DailyMetric {
+  date: string;
+  activeUsers: number;
+  sessions: number;
+  adoptionScore: number;
+}
+
+export interface AppData {
+  events: EventRecord[];
+  customers: CustomerRecord[];
+  scores: ScoreRecord[];
+  lastUpload: Date | null;
+}
+
+export interface DateRange {
+  from: Date;
+  to: Date;
+  label: string;
+}
