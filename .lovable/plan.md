@@ -1,60 +1,148 @@
 
 
-# Update Mock Data to Match Real SUSE Feature Structure
+# Google Authentication with Email-Based Approval
 
-Update the Agent Helper mock data to use the real feature categories and event names visible in the SUSE spreadsheet, so the dashboard reflects actual product usage patterns.
+When a new user signs in with Google, an approval request email is sent to **Disha.bhanot@gmail.com**. Clicking the "Approve" link in the email instantly grants the user access. Until approved, the user sees a "Pending Approval" screen.
 
-## What Changes
+## How It Works
 
-### 1. Update Feature Categories (`src/lib/mock-data.ts`)
+```text
+User signs in with Google
+        |
+        v
+Profile created (approved = false)
+        |
+        v
+Backend function sends email to Disha
+with an "Approve" link
+        |
+        v
+User sees "Pending Approval" screen
+        |
+        v
+Disha clicks "Approve" link in email
+        |
+        v
+Backend function sets approved = true
+        |
+        v
+User refreshes and gets full access
+```
 
-Replace the generic `AH_FEATURES` with the real feature categories from the spreadsheet:
-- Case Summary
-- Case Timeline
-- Response Assist
-- Top Articles
-- Top Related Cases
-- Top Experts
+## Implementation Steps
 
-### 2. Update Event Names (`src/lib/mock-data.ts`)
+### 1. Configure Google OAuth
 
-Replace the generic `AH_EVENTS` with the real sub-feature actions from the spreadsheet:
-- Clicked on brief case summary
-- Clicked on detailed case summary
-- Response generated on first load of response-assist
-- Clicked on Top Articles tab
-- Clicked on Top Related Cases tab
-- Clicked on Top Experts tab
-- Clicked on Response Assist tab
-- No. of times Regenerate Response clicked
-- Tonality model opened
-- Clicked on preview icon
-- No. of times Copy to Clipboard clicked
-- Tone for response assist saved
-- Time taken to generate response
-- Time taken to generate summary
+Use the social auth configuration tool to enable Google sign-in (managed by Lovable Cloud -- no API keys needed).
 
-### 3. Weighted Feature Distribution (`src/lib/mock-data.ts`)
+### 2. Create Database: `profiles` Table + Trigger
 
-Add realistic weighting so feature usage proportions match the spreadsheet chart:
-- Case Summary: ~35% of events (highest)
-- Case Timeline: ~28%
-- Response Assist: ~20%
-- Top Articles: ~9%
-- Top Related Cases: ~5%
-- Top Experts: ~3%
+**profiles table:**
+- `id` (uuid, primary key, references auth.users on delete cascade)
+- `email` (text)
+- `full_name` (text)
+- `avatar_url` (text)
+- `approved` (boolean, default false)
+- `approval_token` (uuid, default gen_random_uuid()) -- unique token used in approval link
+- `created_at` (timestamptz)
 
-This uses a weighted random selection instead of uniform random.
+**RLS policies:**
+- Users can read their own profile
+- No direct update to `approved` from client (only via backend function)
 
-### 4. Map Events to Feature Categories (`src/lib/mock-data.ts`)
+**Database trigger:** On new auth user signup, auto-insert a profile row pulling email/name from auth metadata.
 
-Create a mapping so each event name is tied to its correct feature category (e.g., "Clicked on brief case summary" maps to "Case Summary"), ensuring the Feature Usage chart groups correctly.
+### 3. Create Backend Function: `notify-admin` (Edge Function)
 
-## Files Modified
+Triggered after a new profile is created (called from the database trigger via `pg_net` or from the client after signup).
 
-- `src/lib/mock-data.ts` -- Update AH_FEATURES, AH_EVENTS, and event generation logic with weighted distribution and event-to-feature mapping
+- Receives the new user's email and approval_token
+- Sends an email to **Disha.bhanot@gmail.com** using Lovable AI (or a simple HTTP-based email approach)
+- Email contains:
+  - Who signed up (name + email)
+  - An **"Approve"** button/link pointing to the `approve-user` edge function with the approval_token
 
-## Result
+### 4. Create Backend Function: `approve-user` (Edge Function)
 
-When viewing SUSE (or any Agent Helper customer) in the Customer Drilldown, the feature usage chart and table will show the real feature categories (Case Summary, Case Timeline, etc.) with realistic proportions matching the spreadsheet data.
+- Receives `token` as a query parameter from the approval link
+- Looks up the profile by `approval_token`
+- Sets `approved = true`
+- Returns an HTML page saying "User approved successfully"
+
+### 5. Create Auth Context (`src/context/AuthContext.tsx`)
+
+- Listens to `onAuthStateChange` for session changes
+- Fetches the user's profile (including `approved` status)
+- Exposes `user`, `profile`, `isApproved`, `signOut`, `loading`
+- Polls or re-checks approval status so user doesn't need to log out/in
+
+### 6. Create Login Page (`src/pages/Login.tsx`)
+
+- Clean, branded page matching the dashboard's futuristic design
+- "Sign in with Google" button using `lovable.auth.signInWithOAuth("google", ...)`
+
+### 7. Create Pending Approval Page (`src/pages/PendingApproval.tsx`)
+
+- Shown to authenticated but unapproved users
+- Message: "Your account is pending approval. You'll receive access once the admin approves your request."
+- "Check Again" button to re-fetch profile status
+- Sign-out button
+
+### 8. Create Route Protection (`src/components/ProtectedRoute.tsx`)
+
+- Not authenticated --> redirect to `/login`
+- Authenticated but not approved --> redirect to `/pending`
+- Approved --> render dashboard
+
+### 9. Update `src/App.tsx`
+
+- Wrap routes in `AuthProvider`
+- `/login` and `/pending` as public routes
+- All dashboard routes wrapped with `ProtectedRoute`
+
+## Files to Create
+
+| File | Purpose |
+|------|---------|
+| `src/context/AuthContext.tsx` | Auth state, profile fetching, approval check |
+| `src/pages/Login.tsx` | Google sign-in page |
+| `src/pages/PendingApproval.tsx` | Waiting screen for unapproved users |
+| `src/components/ProtectedRoute.tsx` | Route guard component |
+| `supabase/functions/notify-admin/index.ts` | Sends approval email to Disha |
+| `supabase/functions/approve-user/index.ts` | Handles approval link click |
+
+## Files to Modify
+
+| File | Change |
+|------|--------|
+| `src/App.tsx` | Add AuthProvider, ProtectedRoute, login/pending routes |
+
+## Database Changes (Migration)
+
+- Create `profiles` table with `approval_token` column
+- Create trigger to auto-insert profile on signup
+- Create RLS policies
+- Use `pg_net` extension to call the `notify-admin` function on new profile insert
+
+## Email Format
+
+The approval email to Disha will look like:
+
+**Subject:** New Dashboard Access Request
+
+**Body:**
+> A new user has requested access to the PM Master Dashboard.
+>
+> **Name:** [User's Google name]
+> **Email:** [User's Google email]
+> **Requested at:** [Timestamp]
+>
+> [Approve Access] (button linking to approve-user function)
+
+## Technical Notes
+
+- The approval link is a one-time-use URL containing a unique token -- no login required to approve
+- The `approve-user` function uses the service role key to update the profile, bypassing RLS
+- The admin email (Disha.bhanot@gmail.com) is stored as a secret in the backend, not hardcoded in frontend code
+- Email sending will use Lovable AI's built-in capabilities or a lightweight HTTP approach via the edge function
 
