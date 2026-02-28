@@ -6,83 +6,66 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 220 25% 10%;
+    --background: 222 47% 5%;
+    --foreground: 210 20% 95%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 220 25% 10%;
+    --card: 220 30% 8%;
+    --card-foreground: 210 20% 95%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 25% 10%;
+    --popover: 220 30% 10%;
+    --popover-foreground: 210 20% 95%;
 
-    --primary: 173 58% 39%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 195 100% 50%;
+    --primary-foreground: 222 47% 5%;
 
-    --secondary: 215 20% 95%;
-    --secondary-foreground: 220 20% 20%;
+    --secondary: 220 25% 14%;
+    --secondary-foreground: 210 20% 85%;
 
-    --muted: 215 15% 93%;
-    --muted-foreground: 220 10% 46%;
+    --muted: 220 20% 14%;
+    --muted-foreground: 215 15% 55%;
 
-    --accent: 215 20% 95%;
-    --accent-foreground: 220 20% 20%;
+    --accent: 270 100% 65%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 173 58% 39%;
+    --border: 220 20% 16%;
+    --input: 220 20% 16%;
+    --ring: 195 100% 50%;
 
     --radius: 0.5rem;
 
-    /* Custom tokens */
-    --health-green: 152 60% 42%;
-    --health-green-bg: 152 60% 95%;
-    --health-amber: 38 92% 50%;
-    --health-amber-bg: 38 92% 95%;
-    --health-red: 0 72% 51%;
-    --health-red-bg: 0 72% 95%;
+    /* Neon accent extras */
+    --neon-violet: 270 100% 65%;
+    --neon-magenta: 330 100% 60%;
 
-    --chart-1: 173 58% 39%;
-    --chart-2: 220 70% 55%;
-    --chart-3: 262 52% 55%;
-    --chart-4: 38 92% 50%;
-    --chart-5: 340 65% 55%;
+    /* Health tokens – neon style */
+    --health-green: 152 80% 50%;
+    --health-green-bg: 152 80% 12%;
+    --health-amber: 38 100% 55%;
+    --health-amber-bg: 38 100% 12%;
+    --health-red: 0 80% 55%;
+    --health-red-bg: 0 80% 12%;
 
-    --surface-elevated: 0 0% 100%;
-    --surface-sunken: 220 20% 96%;
+    /* Chart neon palette */
+    --chart-1: 195 100% 50%;
+    --chart-2: 270 100% 65%;
+    --chart-3: 330 100% 60%;
+    --chart-4: 220 80% 60%;
+    --chart-5: 38 100% 55%;
 
-    --sidebar-background: 220 25% 10%;
-    --sidebar-foreground: 215 20% 75%;
-    --sidebar-primary: 173 58% 50%;
+    --surface-elevated: 220 30% 10%;
+    --surface-sunken: 222 47% 4%;
+
+    --sidebar-background: 222 47% 4%;
+    --sidebar-foreground: 215 20% 55%;
+    --sidebar-primary: 195 100% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 20% 16%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 220 20% 18%;
-    --sidebar-ring: 173 58% 39%;
-  }
-
-  .dark {
-    --background: 220 25% 7%;
-    --foreground: 210 20% 95%;
-    --card: 220 25% 10%;
-    --card-foreground: 210 20% 95%;
-    --popover: 220 25% 10%;
-    --popover-foreground: 210 20% 95%;
-    --primary: 173 58% 45%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 220 20% 16%;
-    --secondary-foreground: 210 20% 85%;
-    --muted: 220 15% 16%;
-    --muted-foreground: 215 10% 55%;
-    --accent: 220 20% 16%;
-    --accent-foreground: 210 20% 85%;
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 220 15% 18%;
-    --input: 220 15% 18%;
-    --ring: 173 58% 45%;
+    --sidebar-accent: 220 25% 12%;
+    --sidebar-accent-foreground: 210 20% 95%;
+    --sidebar-border: 220 20% 12%;
+    --sidebar-ring: 195 100% 50%;
   }
 }
 
@@ -96,23 +79,154 @@
   }
 }
 
+/* ========== Glassmorphism & Glow Utilities ========== */
 @layer utilities {
+  .glass {
+    @apply backdrop-blur-xl border;
+    background: hsla(var(--card), 0.6);
+    border-color: hsla(210, 20%, 95%, 0.08);
+  }
+  .glass-strong {
+    @apply backdrop-blur-2xl border;
+    background: hsla(var(--card), 0.8);
+    border-color: hsla(210, 20%, 95%, 0.12);
+  }
+  .glow-cyan {
+    box-shadow: 0 0 20px hsla(var(--primary), 0.25), 0 0 60px hsla(var(--primary), 0.08);
+  }
+  .glow-violet {
+    box-shadow: 0 0 20px hsla(var(--neon-violet), 0.25), 0 0 60px hsla(var(--neon-violet), 0.08);
+  }
+  .glow-amber {
+    box-shadow: 0 0 20px hsla(var(--health-amber), 0.3), 0 0 60px hsla(var(--health-amber), 0.1);
+  }
+  .text-gradient-cyan {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--neon-violet)));
+  }
   .text-health-green {
     color: hsl(var(--health-green));
+    text-shadow: 0 0 8px hsla(var(--health-green), 0.4);
   }
   .text-health-amber {
     color: hsl(var(--health-amber));
+    text-shadow: 0 0 8px hsla(var(--health-amber), 0.4);
   }
   .text-health-red {
     color: hsl(var(--health-red));
+    text-shadow: 0 0 8px hsla(var(--health-red), 0.4);
   }
   .bg-health-green {
     background-color: hsl(var(--health-green-bg));
+    border: 1px solid hsla(var(--health-green), 0.3);
   }
   .bg-health-amber {
     background-color: hsl(var(--health-amber-bg));
+    border: 1px solid hsla(var(--health-amber), 0.3);
   }
   .bg-health-red {
     background-color: hsl(var(--health-red-bg));
+    border: 1px solid hsla(var(--health-red), 0.3);
   }
+  .border-glow-cyan {
+    border: 1px solid hsla(var(--primary), 0.3);
+    box-shadow: inset 0 1px 0 hsla(var(--primary), 0.1);
+  }
+}
+
+/* ========== Animated Background Orbs ========== */
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.35;
+  pointer-events: none;
+}
+.orb-cyan {
+  background: radial-gradient(circle, hsl(195 100% 50% / 0.5), transparent 70%);
+  animation: orb-drift-1 25s ease-in-out infinite;
+}
+.orb-violet {
+  background: radial-gradient(circle, hsl(270 100% 65% / 0.4), transparent 70%);
+  animation: orb-drift-2 30s ease-in-out infinite;
+}
+.orb-magenta {
+  background: radial-gradient(circle, hsl(330 100% 60% / 0.3), transparent 70%);
+  animation: orb-drift-3 20s ease-in-out infinite;
+}
+
+@keyframes orb-drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(60px, -40px) scale(1.1); }
+  66% { transform: translate(-30px, 30px) scale(0.95); }
+}
+@keyframes orb-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-50px, 50px) scale(1.05); }
+  66% { transform: translate(40px, -30px) scale(1.1); }
+}
+@keyframes orb-drift-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(40px, 40px) scale(1.1); }
+  66% { transform: translate(-60px, -20px) scale(0.9); }
+}
+
+/* Grid dots pattern */
+.grid-dots {
+  background-image: radial-gradient(circle, hsla(var(--primary), 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Glow ring animation for icons */
+.glow-ring {
+  position: relative;
+}
+.glow-ring::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  border: 2px solid hsla(var(--primary), 0.4);
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.4; box-shadow: 0 0 10px hsla(var(--primary), 0.2); }
+  50% { opacity: 1; box-shadow: 0 0 25px hsla(var(--primary), 0.5); }
+}
+
+/* Shimmer border */
+.shimmer-border {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer-border::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, hsl(var(--primary)), hsl(var(--neon-violet)), transparent);
+  animation: shimmer 3s ease-in-out infinite;
+}
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* Scanning line */
+.scan-line::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, hsl(var(--health-amber)), transparent);
+  animation: scan 2.5s ease-in-out infinite;
+}
+@keyframes scan {
+  0% { top: 0; opacity: 0; }
+  50% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
 }

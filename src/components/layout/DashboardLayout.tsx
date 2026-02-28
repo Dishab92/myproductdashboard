@@ -19,12 +19,16 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-60 flex-shrink-0 bg-sidebar flex flex-col border-r border-sidebar-border">
-        <div className="px-5 py-5 border-b border-sidebar-border">
-          <h1 className="text-base font-bold text-sidebar-accent-foreground tracking-tight">
+      <aside className="w-60 flex-shrink-0 flex flex-col border-r border-sidebar-border"
+        style={{ background: 'linear-gradient(180deg, hsl(222 47% 4%), hsl(220 30% 8%))' }}>
+        <div className="px-5 py-5 border-b border-sidebar-border relative">
+          <h1 className="text-base font-extrabold tracking-tight text-gradient-cyan">
             PM Master
           </h1>
-          <p className="text-xs text-sidebar-foreground mt-0.5">Product Analytics</p>
+          <p className="text-xs text-sidebar-foreground mt-0.5">Product Command Center</p>
+          {/* Pulsing accent line */}
+          <div className="absolute bottom-0 left-5 right-5 h-[1px] animate-glow-pulse"
+               style={{ background: 'linear-gradient(90deg, hsl(195 100% 50%), hsl(270 100% 65%))' }} />
         </div>
         <nav className="flex-1 py-3 px-3 space-y-0.5">
           {NAV_ITEMS.map(item => {
@@ -33,13 +37,17 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors ${
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-all duration-200 ${
                   active
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                    ? "text-sidebar-accent-foreground font-medium border-l-2 border-primary"
+                    : "text-sidebar-foreground hover:text-sidebar-accent-foreground border-l-2 border-transparent"
                 }`}
+                style={active ? {
+                  background: 'hsla(195, 100%, 50%, 0.08)',
+                  boxShadow: '0 0 12px hsla(195, 100%, 50%, 0.1)',
+                } : {}}
               >
-                <item.icon className="w-4 h-4 flex-shrink-0" />
+                <item.icon className={`w-4 h-4 flex-shrink-0 ${active ? 'text-primary' : ''}`} />
                 <span>{item.label}</span>
                 {active && <ChevronRight className="w-3.5 h-3.5 ml-auto opacity-50" />}
               </Link>
@@ -47,13 +55,22 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           })}
         </nav>
         <div className="px-5 py-4 border-t border-sidebar-border">
-          <p className="text-[10px] text-sidebar-foreground/50 uppercase tracking-wider">Internal Tool</p>
+          <p className="text-[10px] text-sidebar-foreground/40 uppercase tracking-wider"
+             style={{ textShadow: '0 0 6px hsla(195, 100%, 50%, 0.15)' }}>
+            Internal Tool
+          </p>
         </div>
       </aside>
 
       {/* Main */}
-      <main className="flex-1 overflow-auto bg-background">
-        {children}
+      <main className="relative flex-1 overflow-auto bg-background">
+        {/* Background orbs */}
+        <div className="orb orb-cyan w-[300px] h-[300px] top-10 right-10 opacity-20" />
+        <div className="orb orb-violet w-[250px] h-[250px] bottom-20 left-20 opacity-15" />
+        <div className="orb orb-magenta w-[200px] h-[200px] top-1/2 left-1/2 opacity-10" />
+        <div className="relative z-10">
+          {children}
+        </div>
       </main>
     </div>
   );
