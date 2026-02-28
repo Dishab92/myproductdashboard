@@ -123,7 +123,7 @@ export function getCustomerMetrics(
       customer_name: cust?.customer_name || rangeEvents[0]?.customer_name || cid,
       product: products.join(", "),
       products,
-      tier: cust?.tier || "Unknown",
+      release: cust?.release || "Unknown",
       activeUsers: getDistinctUsers(rangeEvents).size,
       totalSessions: getDistinctSessions(rangeEvents).size,
       dau: getDAU(rangeEvents, now),

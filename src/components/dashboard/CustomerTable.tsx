@@ -19,7 +19,7 @@ export function CustomerTable({ customers, onSelect, title }: Props) {
             <TableRow className="bg-muted/50">
               <TableHead className="text-xs font-medium">Customer</TableHead>
               <TableHead className="text-xs font-medium">Product</TableHead>
-              <TableHead className="text-xs font-medium">Tier</TableHead>
+              <TableHead className="text-xs font-medium">Release</TableHead>
               <TableHead className="text-xs font-medium text-right">Active Users</TableHead>
               <TableHead className="text-xs font-medium text-right">Adoption</TableHead>
               <TableHead className="text-xs font-medium text-right">Momentum</TableHead>
@@ -35,7 +35,7 @@ export function CustomerTable({ customers, onSelect, title }: Props) {
               >
                 <TableCell className="font-medium text-sm">{c.customer_name}</TableCell>
                 <TableCell className="text-xs text-muted-foreground">{c.product}</TableCell>
-                <TableCell className="text-xs">{c.tier}</TableCell>
+                <TableCell className="text-xs">{c.release}</TableCell>
                 <TableCell className="text-sm text-right tabular-nums">{c.activeUsers}</TableCell>
                 <TableCell className="text-sm text-right tabular-nums font-medium">{c.adoptionScore}</TableCell>
                 <TableCell className="text-right"><TrendBadge value={c.momentum} /></TableCell>

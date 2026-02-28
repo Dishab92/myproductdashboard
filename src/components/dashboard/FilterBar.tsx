@@ -10,7 +10,7 @@ const DATE_PRESETS = [
 ];
 
 export function FilterBar() {
-  const { dateRange, setDateRange, productFilter, setProductFilter, tierFilter, setTierFilter } = useData();
+  const { dateRange, setDateRange, productFilter, setProductFilter, releaseFilter, setReleaseFilter } = useData();
 
   const handleDatePreset = (days: number, label: string) => {
     const to = new Date();
@@ -46,15 +46,19 @@ export function FilterBar() {
         </SelectContent>
       </Select>
 
-      <Select value={tierFilter} onValueChange={setTierFilter}>
-        <SelectTrigger className="w-[140px] h-8 text-xs">
-          <SelectValue placeholder="Tier" />
+      <Select value={releaseFilter} onValueChange={setReleaseFilter}>
+        <SelectTrigger className="w-[160px] h-8 text-xs">
+          <SelectValue placeholder="Release" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="All">All Tiers</SelectItem>
-          <SelectItem value="Enterprise">Enterprise</SelectItem>
-          <SelectItem value="Professional">Professional</SelectItem>
-          <SelectItem value="Starter">Starter</SelectItem>
+          <SelectItem value="All">All Releases</SelectItem>
+          <SelectItem value="Q2:2024">Q2:2024</SelectItem>
+          <SelectItem value="Q3:2024">Q3:2024</SelectItem>
+          <SelectItem value="Q4:2024">Q4:2024</SelectItem>
+          <SelectItem value="Q1:2025">Q1:2025</SelectItem>
+          <SelectItem value="Q2:2025">Q2:2025</SelectItem>
+          <SelectItem value="Q3:2025">Q3:2025</SelectItem>
+          <SelectItem value="Yet to Go-Live">Yet to Go-Live</SelectItem>
         </SelectContent>
       </Select>
     </div>

@@ -30,9 +30,9 @@ export default function ReportsHub() {
   }, [data, dateRange, productFilter, hasData]);
 
   const exportCSV = () => {
-    const header = "Customer,Product,Tier,Active Users,Sessions,Adoption Score,Momentum,Health\n";
+    const header = "Customer,Product,Release,Active Users,Sessions,Adoption Score,Momentum,Health\n";
     const rows = metrics.map(m =>
-      `"${m.customer_name}","${m.product}","${m.tier}",${m.activeUsers},${m.totalSessions},${m.adoptionScore},${m.momentum},${m.health}`
+      `"${m.customer_name}","${m.product}","${m.release}",${m.activeUsers},${m.totalSessions},${m.adoptionScore},${m.momentum},${m.health}`
     ).join("\n");
     const blob = new Blob([header + rows], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -74,7 +74,7 @@ export default function ReportsHub() {
               <Download className="w-3.5 h-3.5" />
               Export CSV
             </Button>
-            <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground/60 cursor-help" /></TooltipTrigger><TooltipContent side="bottom" className="max-w-[240px] text-xs">Exports customer, product, tier, active users, sessions, adoption score, momentum, and health status</TooltipContent></Tooltip></TooltipProvider>
+            <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground/60 cursor-help" /></TooltipTrigger><TooltipContent side="bottom" className="max-w-[240px] text-xs">Exports customer, product, release, active users, sessions, adoption score, momentum, and health status</TooltipContent></Tooltip></TooltipProvider>
           </div>
         </div>
       </div>

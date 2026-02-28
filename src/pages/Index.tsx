@@ -14,7 +14,7 @@ import { Card } from "@/components/ui/card";
 import { CustomerMetrics } from "@/lib/types";
 
 export default function PortfolioOverview() {
-  const { data, dateRange, productFilter, tierFilter, hasData } = useData();
+  const { data, dateRange, productFilter, releaseFilter, hasData } = useData();
   const navigate = useNavigate();
 
   const metrics = useMemo(() => {
@@ -22,9 +22,9 @@ export default function PortfolioOverview() {
     let events = filterEventsByDateRange(data.events, dateRange.from, dateRange.to);
     events = filterEventsByProduct(events, productFilter);
     let m = getCustomerMetrics(events, data.customers, dateRange.from, dateRange.to);
-    if (tierFilter !== "All") m = m.filter(c => c.tier === tierFilter);
+    if (releaseFilter !== "All") m = m.filter(c => c.release === releaseFilter);
     return m;
-  }, [data, dateRange, productFilter, tierFilter, hasData]);
+  }, [data, dateRange, productFilter, releaseFilter, hasData]);
 
   const kpis = useMemo(() => getPortfolioKPIs(metrics), [metrics]);
 
