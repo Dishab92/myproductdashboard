@@ -8,8 +8,8 @@ interface DataContextType {
   setDateRange: (range: DateRange) => void;
   productFilter: string;
   setProductFilter: (p: string) => void;
-  tierFilter: string;
-  setTierFilter: (t: string) => void;
+  releaseFilter: string;
+  setReleaseFilter: (r: string) => void;
   setEvents: (events: EventRecord[]) => void;
   setCustomers: (customers: CustomerRecord[]) => void;
   setScores: (scores: ScoreRecord[]) => void;
@@ -34,7 +34,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   });
   const [dateRange, setDateRange] = useState<DateRange>(getDefaultDateRange(30, "30 Days"));
   const [productFilter, setProductFilter] = useState("All");
-  const [tierFilter, setTierFilter] = useState("All");
+  const [releaseFilter, setReleaseFilter] = useState("All");
 
   // Load mock data on mount
   useEffect(() => {
@@ -54,8 +54,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setDateRange,
         productFilter,
         setProductFilter,
-        tierFilter,
-        setTierFilter,
+        releaseFilter,
+        setReleaseFilter,
         setEvents: (events) => setData(prev => ({ ...prev, events, lastUpload: new Date() })),
         setCustomers: (customers) => setData(prev => ({ ...prev, customers })),
         setScores: (scores) => setData(prev => ({ ...prev, scores })),

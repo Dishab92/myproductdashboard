@@ -15,7 +15,7 @@ export interface EventRecord {
 export interface CustomerRecord {
   customer_id: string;
   customer_name: string;
-  tier: string;
+  release: string;
   go_live_date: Date;
   licensed_users: number;
   cs_owner: string;
@@ -37,7 +37,7 @@ export interface CustomerMetrics {
   customer_name: string;
   product: string;
   products: string[];
-  tier: string;
+  release: string;
   activeUsers: number;
   totalSessions: number;
   dau: number;

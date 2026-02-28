@@ -95,7 +95,7 @@ export function parseCustomersCSV(text: string): { customers: CustomerRecord[]; 
   const customers: CustomerRecord[] = rows.map(row => ({
     customer_id: row.customer_id,
     customer_name: row.customer_name,
-    tier: row.tier || "Unknown",
+    release: row.release || "Unknown",
     go_live_date: row.go_live_date ? new Date(row.go_live_date) : new Date(),
     licensed_users: parseInt(row.licensed_users) || 0,
     cs_owner: row.cs_owner || "",

@@ -1,19 +1,19 @@
 import { EventRecord, CustomerRecord, ScoreRecord } from "./types";
 
 const AGENT_HELPER_CUSTOMERS = [
-  { id: "ah-001", name: "JAMS Software", tier: "Enterprise", licensed: 120, cs: "Sarah Chen" },
-  { id: "ah-002", name: "nCino", tier: "Enterprise", licensed: 85, cs: "Sarah Chen" },
-  { id: "ah-003", name: "Accela", tier: "Professional", licensed: 60, cs: "Mike Ross" },
-  { id: "ah-004", name: "Nozomi Networks", tier: "Professional", licensed: 45, cs: "Mike Ross" },
-  { id: "ah-005", name: "Bluebeam", tier: "Professional", licensed: 55, cs: "Jen Park" },
-  { id: "ah-006", name: "RainTree", tier: "Starter", licensed: 25, cs: "Jen Park" },
-  { id: "ah-007", name: "SUSE", tier: "Starter", licensed: 20, cs: "Mike Ross" },
-  { id: "ah-008", name: "TechnologyOne", tier: "Starter", licensed: 15, cs: "Sarah Chen" },
-  { id: "ah-009", name: "Command Alkon", tier: "Starter", licensed: 18, cs: "Jen Park" },
+  { id: "ah-001", name: "JAMS Software", release: "Q3:2025", licensed: 120, cs: "Sarah Chen" },
+  { id: "ah-002", name: "nCino", release: "Q2:2025", licensed: 85, cs: "Sarah Chen" },
+  { id: "ah-003", name: "Accela", release: "Q1:2025", licensed: 60, cs: "Mike Ross" },
+  { id: "ah-004", name: "Nozomi Networks", release: "Q3:2025", licensed: 45, cs: "Mike Ross" },
+  { id: "ah-005", name: "Bluebeam", release: "Q4:2024", licensed: 55, cs: "Jen Park" },
+  { id: "ah-006", name: "RainTree", release: "Yet to Go-Live", licensed: 25, cs: "Jen Park" },
+  { id: "ah-007", name: "SUSE", release: "Q4:2024", licensed: 20, cs: "Mike Ross" },
+  { id: "ah-008", name: "TechnologyOne", release: "Q2:2024", licensed: 15, cs: "Sarah Chen" },
+  { id: "ah-009", name: "Command Alkon", release: "Yet to Go-Live", licensed: 18, cs: "Jen Park" },
 ];
 
 const CASE_QA_CUSTOMERS = [
-  { id: "cq-001", name: "Netskope", tier: "Enterprise", licensed: 30, cs: "Sarah Chen" },
+  { id: "cq-001", name: "Netskope", release: "Q3:2024", licensed: 30, cs: "Sarah Chen" },
 ];
 
 const AH_FEATURES = [
@@ -62,7 +62,7 @@ export function generateMockEvents(): EventRecord[] {
   for (const cust of AGENT_HELPER_CUSTOMERS) {
     const userCount = Math.floor(cust.licensed * (0.3 + rng() * 0.5));
     const users = Array.from({ length: userCount }, (_, i) => `${cust.id}-u${i + 1}`);
-    const dailyActivity = cust.tier === "Enterprise" ? 0.85 : cust.tier === "Professional" ? 0.7 : 0.5;
+    const dailyActivity = cust.licensed >= 80 ? 0.85 : cust.licensed >= 40 ? 0.7 : 0.5;
     
     for (let d = new Date(sixMonthsAgo); d <= now; d.setDate(d.getDate() + 1)) {
       if (rng() > dailyActivity) continue;
@@ -143,7 +143,7 @@ export function generateMockCustomers(): CustomerRecord[] {
   }).map((c, i) => ({
     customer_id: c.id,
     customer_name: c.name,
-    tier: c.tier,
+    release: c.release,
     go_live_date: new Date(2024, 2 + i, 1 + i * 3),
     licensed_users: c.licensed,
     cs_owner: c.cs,

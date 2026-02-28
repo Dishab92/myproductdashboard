@@ -113,7 +113,7 @@ export default function DataManagement() {
         />
         <UploadPanel
           title="customers.csv (Optional)"
-          description="Columns: customer_id, customer_name, tier, go_live_date, licensed_users, cs_owner"
+          description="Columns: customer_id, customer_name, release, go_live_date, licensed_users, cs_owner"
           onUpload={handleCustomersUpload}
           result={customersResult}
         />
