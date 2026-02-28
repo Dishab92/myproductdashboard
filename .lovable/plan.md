@@ -1,55 +1,60 @@
 
 
-# Replace Tier with Release Version
+# Update Mock Data to Match Real SUSE Feature Structure
 
-Remove the "Tier" concept (Enterprise/Professional/Starter) and replace it with "Release" version based on the spreadsheet data.
+Update the Agent Helper mock data to use the real feature categories and event names visible in the SUSE spreadsheet, so the dashboard reflects actual product usage patterns.
 
-## Release Mapping (from the provided spreadsheet)
+## What Changes
 
-| Customer | Release |
-|----------|---------|
-| JAMS Software | Q3:2025 |
-| nCino | Q2:2025 |
-| Accela | Q1:2025 |
-| Nozomi Networks | Q3:2025 |
-| Bluebeam | Q4:2024 |
-| RainTree | Yet to Go-Live |
-| SUSE | Q4:2024 |
-| TechnologyOne | Q2:2024 |
-| Command Alkon | Yet to Go-Live |
-| Netskope (Case QA) | Q3:2024 |
+### 1. Update Feature Categories (`src/lib/mock-data.ts`)
 
-## Files to Modify
+Replace the generic `AH_FEATURES` with the real feature categories from the spreadsheet:
+- Case Summary
+- Case Timeline
+- Response Assist
+- Top Articles
+- Top Related Cases
+- Top Experts
 
-### 1. `src/lib/types.ts`
-- Rename `tier` to `release` in `CustomerRecord` and `CustomerMetrics` interfaces.
+### 2. Update Event Names (`src/lib/mock-data.ts`)
 
-### 2. `src/lib/mock-data.ts`
-- Replace `tier` field with `release` in customer arrays using the values above.
-- Remove tier-based daily activity logic (line 65: `cust.tier === "Enterprise" ? 0.85 ...`). Replace with a simpler approach using licensed user count as a proxy for activity level.
-- Update `generateMockCustomers()` to map `release` instead of `tier`.
+Replace the generic `AH_EVENTS` with the real sub-feature actions from the spreadsheet:
+- Clicked on brief case summary
+- Clicked on detailed case summary
+- Response generated on first load of response-assist
+- Clicked on Top Articles tab
+- Clicked on Top Related Cases tab
+- Clicked on Top Experts tab
+- Clicked on Response Assist tab
+- No. of times Regenerate Response clicked
+- Tonality model opened
+- Clicked on preview icon
+- No. of times Copy to Clipboard clicked
+- Tone for response assist saved
+- Time taken to generate response
+- Time taken to generate summary
 
-### 3. `src/context/DataContext.tsx`
-- Rename `tierFilter` / `setTierFilter` to `releaseFilter` / `setReleaseFilter` in the context type and provider.
+### 3. Weighted Feature Distribution (`src/lib/mock-data.ts`)
 
-### 4. `src/components/dashboard/FilterBar.tsx`
-- Replace the Tier dropdown with a Release dropdown listing: Q2:2024, Q3:2024, Q4:2024, Q1:2025, Q2:2025, Q3:2025, Yet to Go-Live.
+Add realistic weighting so feature usage proportions match the spreadsheet chart:
+- Case Summary: ~35% of events (highest)
+- Case Timeline: ~28%
+- Response Assist: ~20%
+- Top Articles: ~9%
+- Top Related Cases: ~5%
+- Top Experts: ~3%
 
-### 5. `src/components/dashboard/CustomerTable.tsx`
-- Change "Tier" column header to "Release" and display `c.release` instead of `c.tier`.
+This uses a weighted random selection instead of uniform random.
 
-### 6. `src/pages/Index.tsx`
-- Update `tierFilter` references to `releaseFilter`, filter by `c.release` instead of `c.tier`.
+### 4. Map Events to Feature Categories (`src/lib/mock-data.ts`)
 
-### 7. `src/pages/ReportsHub.tsx`
-- Update CSV export header and row data: replace "Tier" with "Release", `m.tier` with `m.release`.
+Create a mapping so each event name is tied to its correct feature category (e.g., "Clicked on brief case summary" maps to "Case Summary"), ensuring the Feature Usage chart groups correctly.
 
-### 8. `src/pages/DataManagement.tsx`
-- Update the customers.csv column description text from "tier" to "release".
+## Files Modified
 
-### 9. `src/lib/calculations.ts`
-- Change `tier: cust?.tier || "Unknown"` to `release: cust?.release || "Unknown"` in `getCustomerMetrics()`.
+- `src/lib/mock-data.ts` -- Update AH_FEATURES, AH_EVENTS, and event generation logic with weighted distribution and event-to-feature mapping
 
-### 10. `src/lib/csv-parser.ts`
-- Update `parseCustomersCSV` to map `release` instead of `tier`.
+## Result
+
+When viewing SUSE (or any Agent Helper customer) in the Customer Drilldown, the feature usage chart and table will show the real feature categories (Case Summary, Case Timeline, etc.) with realistic proportions matching the spreadsheet data.
 
