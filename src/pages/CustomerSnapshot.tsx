@@ -91,11 +91,11 @@ export default function CustomerSnapshot() {
 
           <div className="grid grid-cols-5 gap-4">
             {[
-              { title: "Active Users", value: metrics.activeUsers, icon: <Users className="w-4 h-4" />, tooltip: "Distinct users who triggered at least one event in the selected period" },
-              { title: "Sessions", value: metrics.totalSessions, icon: <Zap className="w-4 h-4" />, tooltip: "Distinct session IDs recorded in the selected period" },
-              { title: "DAU / WAU / MAU", value: `${metrics.dau} / ${metrics.wau} / ${metrics.mau}`, tooltip: "Daily, Weekly (7-day), and Monthly (30-day) active unique users" },
-              { title: "Adoption Score", value: metrics.adoptionScore, subtitle: "/100", icon: <BarChart3 className="w-4 h-4" />, tooltip: "Weighted average: Reach (40%) + Frequency (30%) + Depth (30%), scale 0–100" },
-              { title: "Momentum", value: `${metrics.momentum > 0 ? "+" : ""}${metrics.momentum}%`, trend: metrics.momentum, icon: <TrendingUp className="w-4 h-4" />, tooltip: "Week-over-week percentage change in adoption score" },
+              { title: "Active Users", value: metrics.activeUsers, icon: <Users className="w-4 h-4" />, metricId: "active_users" },
+              { title: "Sessions", value: metrics.totalSessions, icon: <Zap className="w-4 h-4" />, metricId: "sessions" },
+              { title: "DAU / WAU / MAU", value: `${metrics.dau} / ${metrics.wau} / ${metrics.mau}`, metricId: "dau" },
+              { title: "Adoption Score", value: metrics.adoptionScore, subtitle: "/100", icon: <BarChart3 className="w-4 h-4" />, metricId: "adoption_score" },
+              { title: "Momentum", value: `${metrics.momentum > 0 ? "+" : ""}${metrics.momentum}%`, trend: metrics.momentum, icon: <TrendingUp className="w-4 h-4" />, metricId: "momentum" },
             ].map((kpi, i) => (
               <div key={kpi.title} className="animate-slide-up" style={{ animationDelay: `${(i + 1) * 0.08}s`, opacity: 0 }}>
                 <KPICard {...kpi} />

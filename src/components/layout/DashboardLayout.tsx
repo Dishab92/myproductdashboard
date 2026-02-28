@@ -1,8 +1,17 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Users, Search, FileBarChart, Database, ChevronRight, UserCheck
+  LayoutDashboard, Users, Search, FileBarChart, Database, ChevronRight, UserCheck, Camera
 } from "lucide-react";
+import { Starfield } from "@/components/effects/Starfield";
+import { EffectsMenu } from "@/components/effects/EffectsMenu";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { DefinitionsDictionary } from "@/components/dashboard/DefinitionsDictionary";
+import { SnapshotToolbar } from "@/components/layout/SnapshotToolbar";
+import { SnapshotFrame } from "@/components/layout/SnapshotFrame";
+import { useSnapshot } from "@/context/SnapshotContext";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const NAV_ITEMS = [
   { path: "/", label: "Portfolio Overview", icon: LayoutDashboard },
@@ -13,22 +22,31 @@ const NAV_ITEMS = [
   { path: "/data", label: "Data Management", icon: Database },
 ];
 
+const PAGE_TITLES: Record<string, string> = {
+  "/": "Portfolio Overview",
+  "/customer": "Customer Snapshot",
+  "/drilldown": "Customer Drilldown",
+  "/agent-adoption": "Agent Adoption",
+  "/reports": "Reports Hub",
+  "/data": "Data Management",
+};
+
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
+  const { isSnapshotMode, toggleSnapshot, contentRef } = useSnapshot();
+  const pageTitle = PAGE_TITLES[location.pathname] || "Dashboard";
 
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-60 flex-shrink-0 flex flex-col border-r border-sidebar-border"
-        style={{ background: 'linear-gradient(180deg, hsl(222 47% 4%), hsl(220 30% 8%))' }}>
+      <aside className="w-60 flex-shrink-0 flex flex-col border-r border-sidebar-border bg-sidebar">
         <div className="px-5 py-5 border-b border-sidebar-border relative">
           <h1 className="text-base font-extrabold tracking-tight text-gradient-cyan">
             PM Master
           </h1>
           <p className="text-xs text-sidebar-foreground mt-0.5">Product Command Center</p>
-          {/* Pulsing accent line */}
           <div className="absolute bottom-0 left-5 right-5 h-[1px] animate-glow-pulse"
-               style={{ background: 'linear-gradient(90deg, hsl(195 100% 50%), hsl(270 100% 65%))' }} />
+               style={{ background: 'linear-gradient(90deg, hsl(var(--primary)), hsl(var(--accent)))' }} />
         </div>
         <nav className="flex-1 py-3 px-3 space-y-0.5">
           {NAV_ITEMS.map(item => {
@@ -43,8 +61,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     : "text-sidebar-foreground hover:text-sidebar-accent-foreground border-l-2 border-transparent"
                 }`}
                 style={active ? {
-                  background: 'hsla(195, 100%, 50%, 0.08)',
-                  boxShadow: '0 0 12px hsla(195, 100%, 50%, 0.1)',
+                  background: 'hsla(var(--primary), 0.08)',
+                  boxShadow: '0 0 12px hsla(var(--primary), 0.1)',
                 } : {}}
               >
                 <item.icon className={`w-4 h-4 flex-shrink-0 ${active ? 'text-primary' : ''}`} />
@@ -55,23 +73,54 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           })}
         </nav>
         <div className="px-5 py-4 border-t border-sidebar-border">
-          <p className="text-[10px] text-sidebar-foreground/40 uppercase tracking-wider"
-             style={{ textShadow: '0 0 6px hsla(195, 100%, 50%, 0.15)' }}>
+          <p className="text-[10px] text-sidebar-foreground/40 uppercase tracking-wider">
             Internal Tool
           </p>
         </div>
       </aside>
 
       {/* Main */}
-      <main className="relative flex-1 overflow-auto bg-background">
-        {/* Background orbs */}
-        <div className="orb orb-cyan w-[300px] h-[300px] top-10 right-10 opacity-20" />
-        <div className="orb orb-violet w-[250px] h-[250px] bottom-20 left-20 opacity-15" />
-        <div className="orb orb-magenta w-[200px] h-[200px] top-1/2 left-1/2 opacity-10" />
-        <div className="relative z-10">
-          {children}
-        </div>
-      </main>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top nav bar */}
+        <header className="flex items-center justify-between px-6 py-2 border-b border-border bg-background/80 backdrop-blur-sm z-20">
+          <h2 className="text-sm font-semibold text-foreground">{pageTitle}</h2>
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            <EffectsMenu />
+            <DefinitionsDictionary />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={isSnapshotMode ? "default" : "ghost"}
+                  size="icon"
+                  className={`h-8 w-8 ${isSnapshotMode ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  onClick={toggleSnapshot}
+                >
+                  <Camera className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">Snapshot Mode</TooltipContent>
+            </Tooltip>
+          </div>
+        </header>
+
+        {/* Snapshot toolbar */}
+        {isSnapshotMode && <SnapshotToolbar />}
+
+        <main className="relative flex-1 overflow-auto bg-background">
+          {/* Starfield behind everything */}
+          <Starfield />
+          {/* Background orbs */}
+          <div className="orb orb-cyan w-[300px] h-[300px] top-10 right-10 opacity-20" />
+          <div className="orb orb-violet w-[250px] h-[250px] bottom-20 left-20 opacity-15" />
+          <div className="orb orb-magenta w-[200px] h-[200px] top-1/2 left-1/2 opacity-10" />
+          <div className="relative z-10" ref={contentRef}>
+            <SnapshotFrame>
+              {children}
+            </SnapshotFrame>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
