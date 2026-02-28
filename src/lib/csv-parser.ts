@@ -1,4 +1,4 @@
-import { EventRecord, CustomerRecord, ScoreRecord } from "./types";
+import { EventRecord, CustomerRecord, ScoreRecord, AgentAdoptionRecord } from "./types";
 
 function parseCSVLine(line: string): string[] {
   const result: string[] = [];
@@ -127,4 +127,48 @@ export function parseScoresCSV(text: string): { scores: ScoreRecord[]; errors: s
   }));
 
   return { scores, errors };
+}
+
+export function parseAgentAdoptionCSV(text: string, customerName: string): { records: AgentAdoptionRecord[]; errors: string[] } {
+  const rows = parseCSV(text);
+  const errors: string[] = [];
+  const required = ["date", "agent_name", "feature_used", "usage_count"];
+
+  if (rows.length === 0) return { records: [], errors: ["Empty file"] };
+
+  const firstRow = rows[0];
+  const missing = required.filter(col => !(col in firstRow));
+  if (missing.length > 0) {
+    errors.push(`Missing columns: ${missing.join(", ")}`);
+    return { records: [], errors };
+  }
+
+  const seen = new Set<string>();
+  const records: AgentAdoptionRecord[] = [];
+
+  for (const row of rows) {
+    // Parse DD-MM-YYYY format
+    const parts = row.date?.split("-");
+    let dt: Date;
+    if (parts && parts.length === 3) {
+      dt = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+    } else {
+      dt = new Date(row.date);
+    }
+    if (isNaN(dt.getTime())) continue;
+
+    const key = `${row.date}-${row.agent_name}-${row.feature_used}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    records.push({
+      date: dt,
+      agentName: row.agent_name,
+      featureUsed: row.feature_used,
+      usageCount: parseInt(row.usage_count) || 0,
+      customerName,
+    });
+  }
+
+  return { records, errors };
 }

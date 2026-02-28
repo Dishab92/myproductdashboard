@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import CustomerSnapshot from "./pages/CustomerSnapshot";
 import CustomerDrilldown from "./pages/CustomerDrilldown";
 import ReportsHub from "./pages/ReportsHub";
+import AgentAdoption from "./pages/AgentAdoption";
 import DataManagement from "./pages/DataManagement";
 import Login from "./pages/Login";
 import PendingApproval from "./pages/PendingApproval";
@@ -38,6 +39,7 @@ const App = () => (
                         <Route path="/" element={<Index />} />
                         <Route path="/customer" element={<CustomerSnapshot />} />
                         <Route path="/drilldown" element={<CustomerDrilldown />} />
+                        <Route path="/agent-adoption" element={<AgentAdoption />} />
                         <Route path="/reports" element={<ReportsHub />} />
                         <Route path="/data" element={<DataManagement />} />
                         <Route path="*" element={<NotFound />} />
