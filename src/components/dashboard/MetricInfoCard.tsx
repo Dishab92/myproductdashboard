@@ -49,7 +49,7 @@ export function MetricInfoCard({ metricId, className }: MetricInfoCardProps) {
   // Pinned mode in snapshot
   if (isSnapshotMode && options.includeDefinitions) {
     return (
-      <div className={`mt-2 p-3 rounded-lg glass border-glow-cyan ${className || ""}`}>
+      <div className={`mt-3 p-3 rounded-lg glass border-glow-cyan w-full overflow-visible break-words ${className || ""}`}>
         <DefinitionPanel metricId={metricId} />
       </div>
     );
