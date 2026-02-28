@@ -90,11 +90,11 @@ export default function CustomerSnapshot() {
           </div>
 
           <div className="grid grid-cols-5 gap-4">
-            <KPICard title="Active Users" value={metrics.activeUsers} icon={<Users className="w-4 h-4" />} />
-            <KPICard title="Sessions" value={metrics.totalSessions} icon={<Zap className="w-4 h-4" />} />
-            <KPICard title="DAU / WAU / MAU" value={`${metrics.dau} / ${metrics.wau} / ${metrics.mau}`} />
-            <KPICard title="Adoption Score" value={metrics.adoptionScore} subtitle="/100" icon={<BarChart3 className="w-4 h-4" />} />
-            <KPICard title="Momentum" value={`${metrics.momentum > 0 ? "+" : ""}${metrics.momentum}%`} trend={metrics.momentum} icon={<TrendingUp className="w-4 h-4" />} />
+            <KPICard title="Active Users" value={metrics.activeUsers} icon={<Users className="w-4 h-4" />} tooltip="Distinct users who triggered at least one event in the selected period" />
+            <KPICard title="Sessions" value={metrics.totalSessions} icon={<Zap className="w-4 h-4" />} tooltip="Distinct session IDs recorded in the selected period" />
+            <KPICard title="DAU / WAU / MAU" value={`${metrics.dau} / ${metrics.wau} / ${metrics.mau}`} tooltip="Daily, Weekly (7-day), and Monthly (30-day) active unique users" />
+            <KPICard title="Adoption Score" value={metrics.adoptionScore} subtitle="/100" icon={<BarChart3 className="w-4 h-4" />} tooltip="Weighted average: Reach (40%) + Frequency (30%) + Depth (30%), scale 0–100" />
+            <KPICard title="Momentum" value={`${metrics.momentum > 0 ? "+" : ""}${metrics.momentum}%`} trend={metrics.momentum} icon={<TrendingUp className="w-4 h-4" />} tooltip="Week-over-week percentage change in adoption score" />
           </div>
 
           <div className="grid grid-cols-2 gap-6">

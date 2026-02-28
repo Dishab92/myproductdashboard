@@ -1,18 +1,19 @@
 import { EventRecord, CustomerRecord, ScoreRecord } from "./types";
 
 const AGENT_HELPER_CUSTOMERS = [
-  { id: "ah-001", name: "Acme Corp", tier: "Enterprise", licensed: 120, cs: "Sarah Chen" },
-  { id: "ah-002", name: "TechFlow Inc", tier: "Enterprise", licensed: 85, cs: "Sarah Chen" },
-  { id: "ah-003", name: "GlobalServ", tier: "Professional", licensed: 60, cs: "Mike Ross" },
-  { id: "ah-004", name: "DataBridge", tier: "Professional", licensed: 45, cs: "Mike Ross" },
-  { id: "ah-005", name: "CloudNine", tier: "Professional", licensed: 55, cs: "Jen Park" },
-  { id: "ah-006", name: "ServiceMax", tier: "Starter", licensed: 25, cs: "Jen Park" },
-  { id: "ah-007", name: "HelpDesk Pro", tier: "Starter", licensed: 20, cs: "Mike Ross" },
-  { id: "ah-008", name: "SupportWise", tier: "Starter", licensed: 15, cs: "Sarah Chen" },
+  { id: "ah-001", name: "JAMS Software", tier: "Enterprise", licensed: 120, cs: "Sarah Chen" },
+  { id: "ah-002", name: "nCino", tier: "Enterprise", licensed: 85, cs: "Sarah Chen" },
+  { id: "ah-003", name: "Accela", tier: "Professional", licensed: 60, cs: "Mike Ross" },
+  { id: "ah-004", name: "Nozomi Networks", tier: "Professional", licensed: 45, cs: "Mike Ross" },
+  { id: "ah-005", name: "Bluebeam", tier: "Professional", licensed: 55, cs: "Jen Park" },
+  { id: "ah-006", name: "RainTree", tier: "Starter", licensed: 25, cs: "Jen Park" },
+  { id: "ah-007", name: "SUSE", tier: "Starter", licensed: 20, cs: "Mike Ross" },
+  { id: "ah-008", name: "TechnologyOne", tier: "Starter", licensed: 15, cs: "Sarah Chen" },
+  { id: "ah-009", name: "Command Alkon", tier: "Starter", licensed: 18, cs: "Jen Park" },
 ];
 
 const CASE_QA_CUSTOMERS = [
-  { id: "cq-001", name: "Acme Corp", tier: "Enterprise", licensed: 30, cs: "Sarah Chen" },
+  { id: "cq-001", name: "Netskope", tier: "Enterprise", licensed: 30, cs: "Sarah Chen" },
 ];
 
 const AH_FEATURES = [

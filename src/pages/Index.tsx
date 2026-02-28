@@ -86,10 +86,10 @@ export default function PortfolioOverview() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-4 gap-4">
-        <KPICard title="Total Customers" value={kpis.totalCustomers} icon={<Users className="w-4 h-4" />} />
-        <KPICard title="Active Users" value={kpis.totalActiveUsers} icon={<Activity className="w-4 h-4" />} />
-        <KPICard title="Avg Adoption Score" value={kpis.avgAdoptionScore} subtitle="out of 100" icon={<Target className="w-4 h-4" />} />
-        <KPICard title="Customers at Risk" value={kpis.customersAtRisk} icon={<AlertTriangle className="w-4 h-4" />} />
+        <KPICard title="Total Customers" value={kpis.totalCustomers} icon={<Users className="w-4 h-4" />} tooltip="Number of distinct customers with events in the selected date range and filters" />
+        <KPICard title="Active Users" value={kpis.totalActiveUsers} icon={<Activity className="w-4 h-4" />} tooltip="Distinct users who triggered at least one event in the selected period" />
+        <KPICard title="Avg Adoption Score" value={kpis.avgAdoptionScore} subtitle="out of 100" icon={<Target className="w-4 h-4" />} tooltip="Weighted average: Reach (40%) + Frequency (30%) + Depth (30%), scale 0–100" />
+        <KPICard title="Customers at Risk" value={kpis.customersAtRisk} icon={<AlertTriangle className="w-4 h-4" />} tooltip="Customers with Red health: adoption score below 40 or no activity for 14+ days" />
       </div>
 
       {/* Alerts */}
