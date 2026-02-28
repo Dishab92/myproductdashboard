@@ -68,10 +68,19 @@ export interface DailyMetric {
   adoptionScore: number;
 }
 
+export interface AgentAdoptionRecord {
+  date: Date;
+  agentName: string;
+  featureUsed: string;
+  usageCount: number;
+  customerName: string;
+}
+
 export interface AppData {
   events: EventRecord[];
   customers: CustomerRecord[];
   scores: ScoreRecord[];
+  agentAdoption: AgentAdoptionRecord[];
   lastUpload: Date | null;
 }
 

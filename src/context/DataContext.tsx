@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { AppData, EventRecord, CustomerRecord, ScoreRecord, DateRange } from "@/lib/types";
+import { AppData, EventRecord, CustomerRecord, ScoreRecord, AgentAdoptionRecord, DateRange } from "@/lib/types";
 import { generateMockEvents, generateMockCustomers, generateMockScores } from "@/lib/mock-data";
 
 interface DataContextType {
@@ -13,6 +13,7 @@ interface DataContextType {
   setEvents: (events: EventRecord[]) => void;
   setCustomers: (customers: CustomerRecord[]) => void;
   setScores: (scores: ScoreRecord[]) => void;
+  setAgentAdoption: (records: AgentAdoptionRecord[]) => void;
   hasData: boolean;
 }
 
@@ -30,6 +31,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     events: [],
     customers: [],
     scores: [],
+    agentAdoption: [],
     lastUpload: null,
   });
   const [dateRange, setDateRange] = useState<DateRange>(getDefaultDateRange(30, "30 Days"));
@@ -41,7 +43,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const events = generateMockEvents();
     const customers = generateMockCustomers();
     const scores = generateMockScores();
-    setData({ events, customers, scores, lastUpload: new Date() });
+    setData({ events, customers, scores, agentAdoption: [], lastUpload: new Date() });
   }, []);
 
   const hasData = data.events.length > 0;
@@ -59,6 +61,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setEvents: (events) => setData(prev => ({ ...prev, events, lastUpload: new Date() })),
         setCustomers: (customers) => setData(prev => ({ ...prev, customers })),
         setScores: (scores) => setData(prev => ({ ...prev, scores })),
+        setAgentAdoption: (records) => setData(prev => ({
+          ...prev,
+          agentAdoption: [...prev.agentAdoption.filter(r => {
+            // Remove existing records for the same customer to allow re-upload
+            const newCustomers = new Set(records.map(nr => nr.customerName));
+            return !newCustomers.has(r.customerName);
+          }), ...records],
+        })),
         hasData,
       }}
     >

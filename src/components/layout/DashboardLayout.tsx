@@ -1,13 +1,14 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Users, Search, FileBarChart, Database, ChevronRight
+  LayoutDashboard, Users, Search, FileBarChart, Database, ChevronRight, UserCheck
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { path: "/", label: "Portfolio Overview", icon: LayoutDashboard },
   { path: "/customer", label: "Customer Snapshot", icon: Users },
   { path: "/drilldown", label: "Customer Drilldown", icon: Search },
+  { path: "/agent-adoption", label: "Agent Adoption", icon: UserCheck },
   { path: "/reports", label: "Reports Hub", icon: FileBarChart },
   { path: "/data", label: "Data Management", icon: Database },
 ];
