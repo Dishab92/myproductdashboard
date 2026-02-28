@@ -13,6 +13,12 @@ import {
   getFeatureUsage, getDailyMetrics
 } from "@/lib/calculations";
 import { Info } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function CustomerDrilldown() {
   const { data, dateRange, hasData } = useData();
@@ -99,19 +105,25 @@ export default function CustomerDrilldown() {
 
           {/* A) Adoption Trends */}
           <Card className="p-5 border bg-card">
-            <h3 className="text-sm font-semibold text-card-foreground mb-4">Adoption Trends</h3>
+            <div className="flex items-center gap-1.5 mb-4">
+              <h3 className="text-sm font-semibold text-card-foreground">Adoption Trends</h3>
+              <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground/60 cursor-help" /></TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Daily adoption score trend over the selected date range</TooltipContent></Tooltip></TooltipProvider>
+            </div>
             <TrendLineChart data={dailyData} />
           </Card>
 
           {/* B) Engagement Breakdown */}
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: "Reach", value: metrics.reach, desc: "Active / Licensed users" },
-              { label: "Frequency", value: metrics.frequency, desc: "Sessions per active user" },
-              { label: "Depth", value: metrics.depth, desc: "Distinct core actions used" },
+              { label: "Reach", value: metrics.reach, desc: "Active / Licensed users", tip: "Active users divided by licensed users (40% of adoption score)" },
+              { label: "Frequency", value: metrics.frequency, desc: "Sessions per active user", tip: "Sessions per active user, normalized (30% of adoption score)" },
+              { label: "Depth", value: metrics.depth, desc: "Distinct core actions used", tip: "Distinct core actions used, normalized (30% of adoption score)" },
             ].map(item => (
               <Card key={item.label} className="p-5 border bg-card">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{item.label}</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{item.label}</p>
+                  <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground/60 cursor-help" /></TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">{item.tip}</TooltipContent></Tooltip></TooltipProvider>
+                </div>
                 <div className="flex items-end gap-2 mt-2">
                   <span className="text-3xl font-bold text-card-foreground">{item.value}</span>
                   <span className="text-xs text-muted-foreground pb-1">/100</span>
@@ -129,7 +141,10 @@ export default function CustomerDrilldown() {
 
           {/* C) Feature Usage Table */}
           <Card className="p-5 border bg-card">
-            <h3 className="text-sm font-semibold text-card-foreground mb-4">Feature Usage</h3>
+            <div className="flex items-center gap-1.5 mb-4">
+              <h3 className="text-sm font-semibold text-card-foreground">Feature Usage</h3>
+              <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground/60 cursor-help" /></TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Breakdown of feature clicks, unique users, and share of total usage</TooltipContent></Tooltip></TooltipProvider>
+            </div>
             <div className="grid grid-cols-2 gap-6">
               <FeatureBarChart data={featureUsage} />
               <div className="border rounded-lg overflow-hidden">
@@ -159,7 +174,10 @@ export default function CustomerDrilldown() {
 
           {/* D) Session Analysis */}
           <Card className="p-5 border bg-card">
-            <h3 className="text-sm font-semibold text-card-foreground mb-4">Session Analysis</h3>
+            <div className="flex items-center gap-1.5 mb-4">
+              <h3 className="text-sm font-semibold text-card-foreground">Session Analysis</h3>
+              <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground/60 cursor-help" /></TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Session volume and per-user distribution for the selected period</TooltipContent></Tooltip></TooltipProvider>
+            </div>
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center p-4 bg-muted/30 rounded-lg">
                 <p className="text-2xl font-bold text-foreground">{metrics.totalSessions}</p>
