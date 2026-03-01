@@ -6,9 +6,13 @@ import { FilterBar } from "@/components/dashboard/FilterBar";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { CustomerTable } from "@/components/dashboard/CustomerTable";
 import { HealthBadge } from "@/components/dashboard/HealthBadge";
+import { GreetingHeader } from "@/components/dashboard/GreetingHeader";
+import { InsightPanel } from "@/components/dashboard/InsightPanel";
 import {
   filterEventsByDateRange, filterEventsByProduct, getCustomerMetrics, getPortfolioKPIs
 } from "@/lib/calculations";
+import { computeRiskAssessments, computeCohortData } from "@/lib/risk-calculations";
+import { generateInsights } from "@/lib/insight-engine";
 import { Users, Activity, Target, AlertTriangle, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -29,6 +33,23 @@ export default function PortfolioOverview() {
   }, [data, dateRange, productFilter, releaseFilter, hasData]);
 
   const kpis = useMemo(() => getPortfolioKPIs(metrics), [metrics]);
+
+  const riskAssessments = useMemo(() => {
+    if (!hasData) return [];
+    let events = filterEventsByDateRange(data.events, dateRange.from, dateRange.to);
+    events = filterEventsByProduct(events, productFilter);
+    return computeRiskAssessments(events, data.customers, metrics, dateRange);
+  }, [data, dateRange, productFilter, metrics, hasData]);
+
+  const cohortData = useMemo(() => {
+    if (!hasData) return [];
+    return computeCohortData(data.events, data.customers, dateRange);
+  }, [data, dateRange, hasData]);
+
+  const insights = useMemo(
+    () => generateInsights(metrics, riskAssessments, cohortData),
+    [metrics, riskAssessments, cohortData]
+  );
 
   const topGrowing = useMemo(() =>
     [...metrics].sort((a, b) => b.momentum - a.momentum).slice(0, 5),
@@ -81,6 +102,8 @@ export default function PortfolioOverview() {
 
   return (
     <div className="p-6 space-y-6 max-w-[1400px]">
+      <GreetingHeader lastUpload={data.lastUpload} />
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-extrabold text-gradient-cyan">Portfolio Overview</h1>
@@ -88,6 +111,8 @@ export default function PortfolioOverview() {
         </div>
         {(!isSnapshotMode || options.includeFilters) && <FilterBar />}
       </div>
+
+      <InsightPanel insights={insights} />
 
       {/* KPI Cards with staggered animation */}
       <div className="grid grid-cols-4 gap-4">
