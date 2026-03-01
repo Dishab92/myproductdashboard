@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, Search, FileBarChart, Database, ChevronRight, UserCheck, Camera, ShieldAlert,
-  BarChart3, Clock,
+  BarChart3, Clock, Map,
 } from "lucide-react";
 import { Starfield } from "@/components/effects/Starfield";
 import { EffectsMenu } from "@/components/effects/EffectsMenu";
@@ -26,6 +26,7 @@ const NAV_ITEMS = [
   { path: "/insights/cases", label: "Case Time", icon: Clock, group: "Insights" },
   { path: "/reports", label: "Reports Hub", icon: FileBarChart, group: "Tools" },
   { path: "/data", label: "Data Management", icon: Database, group: "Tools" },
+  { path: "/roadmap", label: "Roadmap", icon: Map, group: "Roadmap" },
 ];
 
 const PAGE_TITLES: Record<string, string> = {
@@ -39,6 +40,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/insights/cases": "Case Time",
   "/reports": "Reports Hub",
   "/data": "Data Management",
+  "/roadmap": "Roadmap",
 };
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
