@@ -141,6 +141,7 @@ function parseAgentHelperFormat(text: string, _headers: string[], tenantConfig?:
       feature: featureCategory,
       case_id: row.case_number?.trim() || undefined,
       metadata_json: buildMetadataJson(row),
+      event_key: key,
     });
   }
 
@@ -215,6 +216,7 @@ export function parseEventsCSV(text: string): { events: EventRecord[]; errors: s
       case_id: row.case_id || undefined,
       channel: row.channel || undefined,
       metadata_json: row.metadata_json || undefined,
+      event_key: key,
     });
   }
 
