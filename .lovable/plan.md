@@ -1,120 +1,137 @@
 
+# Strict Data Mode: Remove Mock Data, Enforce CSV-Only Analytics
 
-# Fix CSV Upload: Auto-Detect Agent Helper Layout
-
-The current parser requires exact columns (`event_time`, `customer_id`, `customer_name`, `product`, `session_id`, `event_name`, `feature`), which rejects your real Agent Helper CSV. This plan adds auto-detection and field mapping so your CSV works out of the box, plus a tenant configuration table for customer names and go-live dates.
-
----
-
-## 1. Add Auto-Detection to CSV Parser (`src/lib/csv-parser.ts`)
-
-Add a new function `detectAndParseEventsCSV(text)` that:
-
-1. Parses headers and checks if `feature_category`, `feature_name`, `interaction_type`, and `tenant_id` are all present
-2. If yes: classify as "Agent Helper" format and run the new mapping logic
-3. If no: fall through to existing `parseEventsCSV` (standard format)
-
-### Agent Helper Mapping Logic
-
-For each row, map fields as follows:
-
-| CSV Column | Maps To | Notes |
-|-----------|---------|-------|
-| `ts` | `event_time` | Parse as full datetime; if invalid, skip row with warning |
-| `tenant_id` | `customer_id` | Direct mapping |
-| `user_id` | `user_id` | Direct mapping |
-| `feature_category` | `feature` (module) | Used as the primary feature field |
-| `feature_name` | stored in `metadata_json` as sub_feature context | Also used to derive `event_name` |
-| `interaction_type` | normalized and used in `event_name` | See normalization below |
-| `case_number` | `case_id` | Optional |
-| `uid` | stored in `metadata_json` as `client_uid` | NOT used for sessions |
-| `metric` | `metadata_json` | Parse JSON for response_time, api_status |
-
-Derived fields:
-- `event_name` = `interaction_type + ":" + feature_category + ":" + feature_name`
-- `product` = constant `"Agent Helper"`
-- `session_id` = generated as `user_id + "-" + date_portion` (synthetic daily session, since CSV has no session concept)
-- `customer_name` = looked up from tenant config (see section 4), fallback to `tenant_id`
-
-### Interaction Type Normalization
-- `click` -> `user_action`
-- `page view` / `pageview` -> `page_view`
-- `response_time` -> `system_latency`
-- Everything else: keep as-is
-
-### Metric JSON Parsing
-If `metric` column value looks like JSON with `response_time` or `api_status`:
-- Extract `response_time` as integer, `api_status` as integer
-- Store both in `metadata_json` as `{"response_time_ms": N, "api_status": N, "client_uid": "..."}`
-- If JSON parse fails: log warning but continue
-
-### Return Value
-Same shape as `parseEventsCSV`: `{ events, errors, total, detectedFormat: "agent_helper" | "standard" }`. Add `detectedFormat` to signal the UI about which format was auto-detected.
+Eliminate all demo/mock/seed data. The dashboard shows an empty state until a real CSV is uploaded. Add strict validation, full dataset replacement on upload, a data integrity summary panel, and date-range-aware filters.
 
 ---
 
-## 2. Update Data Management Page (`src/pages/DataManagement.tsx`)
+## 1. Remove Mock Data System
 
-- Replace `parseEventsCSV` call with `detectAndParseEventsCSV`
-- Update the events upload panel description to say: "Supports both standard format and Agent Helper format (auto-detected)"
-- Show detected format in the success message (e.g., "Agent Helper format detected. 12,345 events loaded...")
-- If `ts` parsing produces warnings, show them but still load parseable rows
+### Delete `src/lib/mock-data.ts`
+- Remove the entire file (generateMockEvents, generateMockCustomers, generateMockScores)
 
-### Add Tenant Configuration Section
+### Update `src/context/DataContext.tsx`
+- Remove the import of `generateMockEvents`, `generateMockCustomers`, `generateMockScores`
+- Remove the `useEffect` block (lines 83-89) that loads mock data on mount
+- Initial state stays as-is (empty arrays, `lastUpload: null`) -- this is already correct
+- `hasData` already returns false when events are empty, so the empty state on Index.tsx will show automatically
 
-Add a new section below the upload panels: "Customer Configuration"
+### Update `setEvents` in DataContext
+- Change to full replacement: clear previous customers/scores/agentAdoption when new events are uploaded
+- Add console logging on import: earliest timestamp, latest timestamp, row count
+- Auto-set dateRange to match the actual data range (min/max of event_time)
 
-- A simple editable table with columns: `tenant_id`, `customer_name`, `go_live_date`, `stage`
-- Pre-populate tenant_id values from uploaded events (distinct `customer_id` values)
-- Allow manual entry of `customer_name`, `go_live_date`, and `stage`
-- Store configuration in DataContext (new `tenantConfig` state)
-- When config is saved, update `customer_name` on all existing events and auto-generate `CustomerRecord` entries
-- Persist config to localStorage so re-uploads skip the mapping step
-
----
-
-## 3. Update Types (`src/lib/types.ts`)
-
-Add:
 ```text
-TenantConfig {
-  tenant_id: string
-  customer_name: string
-  go_live_date: Date | null
-  stage: string  // e.g., "Live", "Pilot", "Onboarding"
+setEvents: (events) => {
+  // FULL REPLACEMENT - clear all previous data
+  const sorted = [...events].sort((a, b) => a.event_time.getTime() - b.event_time.getTime());
+  const from = sorted[0]?.event_time || new Date();
+  const to = sorted[sorted.length - 1]?.event_time || new Date();
+  
+  console.log("[DataImport] Rows:", events.length);
+  console.log("[DataImport] Earliest:", from.toISOString());
+  console.log("[DataImport] Latest:", to.toISOString());
+  console.log("[DataImport] Invalid ts rows: logged at parse time");
+  
+  setDateRange({ from, to, label: "All Data" });
+  setData(prev => ({
+    ...prev,
+    events: applyTenantConfig(events, prev.tenantConfig),
+    customers: generateCustomersFromConfig(prev.tenantConfig),
+    scores: [],
+    agentAdoption: [],
+    lastUpload: new Date(),
+  }));
 }
 ```
 
-Update `AppData` to include:
+---
+
+## 2. Strict CSV Validation (`src/lib/csv-parser.ts`)
+
+### Add hard-error validation in `parseAgentHelperFormat`
+
+Before processing rows, check that each row has non-empty values for required fields:
+- `tenant_id`, `user_id`, `feature_category`, `feature_name`, `interaction_type`, `ts`
+
+If a row is missing any required field, skip it and count as a hard error. If the majority (>50%) of rows fail validation, stop the import entirely and return an error.
+
+### Add majority-failure check for datetime parsing
+- Track `invalidDates` count (already done)
+- After the loop: if `invalidDates > rows.length * 0.5`, return error: "Invalid datetime format in ts column. Import stopped. Over 50% of rows had unparseable timestamps."
+
+### Add warnings for optional fields
+- If `metric` is present but not valid JSON, count and report as warning
+- If `case_number` is missing on rows, note in warnings
+
+### Remove any fallback date logic
+- The parser already skips rows with invalid dates (line 97) -- this is correct
+- Confirm no `new Date()` fallback is used for event_time anywhere
+
+---
+
+## 3. Full Dataset Replacement on Upload (`src/pages/DataManagement.tsx`)
+
+### Update `handleEventsUpload`
+- On successful upload, show confirmation: "Dataset replaced successfully."
+- The `setEvents` call already triggers full replacement (from step 1)
+
+### Update `handleCustomersUpload` and `handleScoresUpload`
+- These already do full replacement via `setCustomers`/`setScores` -- no change needed
+
+### Add Data Integrity Summary Panel
+
+Add a prominent card at the top of the Data Management page (and optionally on Portfolio Overview) that shows:
+
 ```text
-tenantConfig: TenantConfig[]
+DATA INTEGRITY SUMMARY
+-----------------------------------------------
+Rows Imported:        12,345
+Unique Customers:     8
+Unique Users:         142
+Date Range:           2025-01-15 -> 2025-02-28
+Modules Detected:     6
+Cases Detected:       234
+Format:               Agent Helper
+-----------------------------------------------
 ```
 
----
-
-## 4. Update DataContext (`src/context/DataContext.tsx`)
-
-- Add `tenantConfig` state with localStorage persistence (load on mount, save on change)
-- Add `setTenantConfig` setter exposed via context
-- When `tenantConfig` changes, update `customer_name` on all events and regenerate `customers` array from config
-- Add `tenantConfig` and `setTenantConfig` to context type
+This panel:
+- Only shows when data is loaded (`hasData`)
+- Computes all values directly from `data.events` (no cached/derived values)
+- Shows modules as distinct `feature` values
+- Shows cases as distinct `case_id` values (excluding undefined)
 
 ---
 
-## 5. Create Tenant Config Component (`src/components/dashboard/TenantConfigTable.tsx`)
+## 4. Date Filters Respect True Data Range (`src/components/dashboard/FilterBar.tsx`)
 
-- Renders an editable table of tenant configurations
-- Columns: Tenant ID (read-only), Customer Name (editable input), Go-Live Date (date input), Stage (select: Live/Pilot/Onboarding)
-- "Save" button applies config and updates events + customer records
-- Shows count of events per tenant for context
-- Futuristic card styling consistent with the rest of the dashboard
+### Replace hardcoded date presets with data-aware presets
+
+- Compute `dataMin` and `dataMax` from `data.events` (min/max `event_time`)
+- Replace the static "7 Days / 30 Days / 90 Days / 6 Months" buttons with:
+  - "All Data" -- full range from dataMin to dataMax
+  - "Last 7 Days" -- max(dataMin, dataMax - 7 days) to dataMax
+  - "Last 30 Days" -- max(dataMin, dataMax - 30 days) to dataMax
+  - "Last 90 Days" -- max(dataMin, dataMax - 90 days) to dataMax
+- All presets are clamped to the actual data range
+- If the selected range returns no data, show: "No data available for selected range."
+
+### Remove hardcoded release filter options
+- Dynamically generate release options from `data.customers` releases
+- Keep "All Releases" as the default
 
 ---
 
-## 6. Update Upload Panel Description (`src/components/dashboard/UploadPanel.tsx`)
+## 5. Clean Up Remaining Pages
 
-- Add optional `detectedFormat` prop to show a badge indicating which format was detected
-- No structural changes needed
+### All chart components
+- Charts already receive data via props from computed metrics
+- Since mock data is removed, charts will be empty until CSV is uploaded
+- The empty state on Index.tsx already handles this (lines 81-97)
+
+### Verify no other files import from mock-data.ts
+- Search for any remaining references and remove them
 
 ---
 
@@ -122,12 +139,10 @@ tenantConfig: TenantConfig[]
 
 | Action | File |
 |--------|------|
-| Modify | `src/lib/csv-parser.ts` -- Add `detectAndParseEventsCSV` with auto-detection and Agent Helper mapping |
-| Modify | `src/lib/types.ts` -- Add `TenantConfig` interface, update `AppData` |
-| Modify | `src/context/DataContext.tsx` -- Add `tenantConfig` state with localStorage persistence |
-| Create | `src/components/dashboard/TenantConfigTable.tsx` -- Editable tenant configuration table |
-| Modify | `src/pages/DataManagement.tsx` -- Use new parser, add tenant config section, show detected format |
-| Modify | `src/components/dashboard/UploadPanel.tsx` -- Add optional format badge |
+| Delete | `src/lib/mock-data.ts` |
+| Modify | `src/context/DataContext.tsx` -- Remove mock data loading, enforce full replacement, auto-set date range, add console logging |
+| Modify | `src/lib/csv-parser.ts` -- Add strict validation (hard errors for missing required fields, majority-failure stop, warnings for optional fields) |
+| Modify | `src/pages/DataManagement.tsx` -- Add Data Integrity Summary panel, update success messages |
+| Modify | `src/components/dashboard/FilterBar.tsx` -- Data-aware date presets, dynamic release options, clamp to actual range |
 
-No new dependencies. No database changes needed (tenant config stored in localStorage for Phase 1).
-
+No new dependencies. No database changes.
