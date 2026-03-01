@@ -17,9 +17,10 @@ interface WeightedSheetViewProps {
   onEdit: (item: RoadmapItem) => void;
   onRefresh: () => void;
   customerSafe: boolean;
+  isAdmin: boolean;
 }
 
-export function WeightedSheetView({ items, weights, onEdit, onRefresh, customerSafe }: WeightedSheetViewProps) {
+export function WeightedSheetView({ items, weights, onEdit, onRefresh, customerSafe, isAdmin }: WeightedSheetViewProps) {
   const [editingCell, setEditingCell] = useState<{ id: string; key: string } | null>(null);
 
   const scored = items.map((item) => ({
@@ -66,8 +67,8 @@ export function WeightedSheetView({ items, weights, onEdit, onRefresh, customerS
           {scored.map((item) => (
             <tr
               key={item.id}
-              className="border-t border-border/50 hover:bg-muted/30 cursor-pointer transition-colors"
-              onClick={() => onEdit(item)}
+              className={cn("border-t border-border/50 hover:bg-muted/30 transition-colors", isAdmin && "cursor-pointer")}
+              onClick={() => isAdmin && onEdit(item)}
             >
               <td className="px-3 py-2 font-medium text-foreground sticky left-0 bg-background/80 backdrop-blur-sm">
                 {item.title}
@@ -97,7 +98,7 @@ export function WeightedSheetView({ items, weights, onEdit, onRefresh, customerS
                 const isEditing = editingCell?.id === item.id && editingCell?.key === d.key;
                 return (
                   <td key={d.key} className="px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}>
-                    {isEditing ? (
+                    {isAdmin && isEditing ? (
                       <Select
                         defaultValue={String(val)}
                         onValueChange={(v) => handleScoreChange(item.id, d.key, parseInt(v))}
@@ -113,9 +114,11 @@ export function WeightedSheetView({ items, weights, onEdit, onRefresh, customerS
                       <button
                         className={cn(
                           "w-8 h-6 rounded text-xs font-mono transition-colors",
-                          val > 0 ? "bg-primary/10 text-primary hover:bg-primary/20" : "text-muted-foreground/40 hover:bg-muted"
+                          val > 0 ? "bg-primary/10 text-primary" : "text-muted-foreground/40",
+                          isAdmin && (val > 0 ? "hover:bg-primary/20" : "hover:bg-muted")
                         )}
-                        onClick={() => setEditingCell({ id: item.id, key: d.key })}
+                        onClick={() => isAdmin && setEditingCell({ id: item.id, key: d.key })}
+                        disabled={!isAdmin}
                       >
                         {val}
                       </button>

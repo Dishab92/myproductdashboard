@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ import {
 import type { RoadmapItem } from "@/components/roadmap/RoadmapCard";
 
 export default function AgentHelperRoadmap() {
+  const { isAdmin } = useAuth();
   const [items, setItems] = useState<RoadmapItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [weights, setWeights] = useState<ScoringWeights>(DEFAULT_WEIGHTS);
@@ -139,16 +141,22 @@ export default function AgentHelperRoadmap() {
         </div>
 
         <div className="ml-auto flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={() => setWeightConfigOpen(true)}>
-            <Settings className="w-3.5 h-3.5" /> Weights
-          </Button>
-          <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={() => setBulkOpen(true)}>
-            <Upload className="w-3.5 h-3.5" /> Import
-          </Button>
+          {isAdmin && (
+            <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={() => setWeightConfigOpen(true)}>
+              <Settings className="w-3.5 h-3.5" /> Weights
+            </Button>
+          )}
+          {isAdmin && (
+            <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={() => setBulkOpen(true)}>
+              <Upload className="w-3.5 h-3.5" /> Import
+            </Button>
+          )}
           <DeckGenerator items={filtered} customerSafe={customerSafe} />
-          <Button size="sm" className="gap-1.5 h-8 text-xs" onClick={() => { setEditItem(null); setDialogOpen(true); }}>
-            <Plus className="w-3.5 h-3.5" /> Add Item
-          </Button>
+          {isAdmin && (
+            <Button size="sm" className="gap-1.5 h-8 text-xs" onClick={() => { setEditItem(null); setDialogOpen(true); }}>
+              <Plus className="w-3.5 h-3.5" /> Add Item
+            </Button>
+          )}
         </div>
       </div>
 
@@ -162,19 +170,19 @@ export default function AgentHelperRoadmap() {
 
         <TabsContent value="sheet">
           {loading ? <p className="text-sm text-muted-foreground py-8 text-center">Loading...</p> : (
-            <WeightedSheetView items={filtered} weights={weights} onEdit={(i) => { setEditItem(i); setDialogOpen(true); }} onRefresh={fetchItems} customerSafe={customerSafe} />
+            <WeightedSheetView items={filtered} weights={weights} onEdit={(i) => { setEditItem(i); setDialogOpen(true); }} onRefresh={fetchItems} customerSafe={customerSafe} isAdmin={isAdmin} />
           )}
         </TabsContent>
 
         <TabsContent value="table">
           {loading ? <p className="text-sm text-muted-foreground py-8 text-center">Loading...</p> : (
-            <AgentHelperTableView items={filtered} weights={weights} onEdit={(i) => { setEditItem(i); setDialogOpen(true); }} onDelete={setDeleteItem} customerSafe={customerSafe} />
+            <AgentHelperTableView items={filtered} weights={weights} onEdit={(i) => { setEditItem(i); setDialogOpen(true); }} onDelete={setDeleteItem} customerSafe={customerSafe} isAdmin={isAdmin} />
           )}
         </TabsContent>
 
         <TabsContent value="timeline">
           {loading ? <p className="text-sm text-muted-foreground py-8 text-center">Loading...</p> : (
-            <AgentHelperTimelineView items={filtered} weights={weights} onEdit={(i) => { setEditItem(i); setDialogOpen(true); }} customerSafe={customerSafe} />
+            <AgentHelperTimelineView items={filtered} weights={weights} onEdit={(i) => { setEditItem(i); setDialogOpen(true); }} customerSafe={customerSafe} isAdmin={isAdmin} />
           )}
         </TabsContent>
       </Tabs>
