@@ -1,7 +1,8 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Users, Search, FileBarChart, Database, ChevronRight, UserCheck, Camera, ShieldAlert
+  LayoutDashboard, Users, Search, FileBarChart, Database, ChevronRight, UserCheck, Camera, ShieldAlert,
+  BarChart3, Clock,
 } from "lucide-react";
 import { Starfield } from "@/components/effects/Starfield";
 import { EffectsMenu } from "@/components/effects/EffectsMenu";
@@ -15,13 +16,16 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const NAV_ITEMS = [
-  { path: "/", label: "Portfolio Overview", icon: LayoutDashboard },
-  { path: "/customer", label: "Customer Snapshot", icon: Users },
-  { path: "/drilldown", label: "Customer Drilldown", icon: Search },
-  { path: "/agent-adoption", label: "Agent Adoption", icon: UserCheck },
-  { path: "/adoption-health", label: "Adoption Health", icon: ShieldAlert },
-  { path: "/reports", label: "Reports Hub", icon: FileBarChart },
-  { path: "/data", label: "Data Management", icon: Database },
+  { path: "/", label: "Portfolio Overview", icon: LayoutDashboard, group: "Dashboard" },
+  { path: "/customer", label: "Customer Snapshot", icon: Users, group: "Dashboard" },
+  { path: "/drilldown", label: "Customer Drilldown", icon: Search, group: "Dashboard" },
+  { path: "/agent-adoption", label: "Agent Adoption", icon: UserCheck, group: "Dashboard" },
+  { path: "/adoption-health", label: "Adoption Health", icon: ShieldAlert, group: "Dashboard" },
+  { path: "/insights/features", label: "Feature Insights", icon: BarChart3, group: "Insights" },
+  { path: "/insights/agents", label: "Agent Insights", icon: UserCheck, group: "Insights" },
+  { path: "/insights/cases", label: "Case Time", icon: Clock, group: "Insights" },
+  { path: "/reports", label: "Reports Hub", icon: FileBarChart, group: "Tools" },
+  { path: "/data", label: "Data Management", icon: Database, group: "Tools" },
 ];
 
 const PAGE_TITLES: Record<string, string> = {
@@ -30,6 +34,9 @@ const PAGE_TITLES: Record<string, string> = {
   "/drilldown": "Customer Drilldown",
   "/agent-adoption": "Agent Adoption",
   "/adoption-health": "Adoption Health",
+  "/insights/features": "Feature Insights",
+  "/insights/agents": "Agent Insights",
+  "/insights/cases": "Case Time",
   "/reports": "Reports Hub",
   "/data": "Data Management",
 };
@@ -51,27 +58,35 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <div className="absolute bottom-0 left-5 right-5 h-[1px] animate-glow-pulse"
                style={{ background: 'linear-gradient(90deg, hsl(var(--primary)), hsl(var(--accent)))' }} />
         </div>
-        <nav className="flex-1 py-3 px-3 space-y-0.5">
-          {NAV_ITEMS.map(item => {
+        <nav className="flex-1 py-3 px-3 space-y-0.5 overflow-y-auto">
+          {NAV_ITEMS.map((item, idx) => {
             const active = location.pathname === item.path;
+            const prevGroup = idx > 0 ? NAV_ITEMS[idx - 1].group : null;
+            const showGroupLabel = item.group !== prevGroup;
             return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-all duration-200 ${
-                  active
-                    ? "text-sidebar-accent-foreground font-medium border-l-2 border-primary"
-                    : "text-sidebar-foreground hover:text-sidebar-accent-foreground border-l-2 border-transparent"
-                }`}
-                style={active ? {
-                  background: 'hsla(var(--primary), 0.08)',
-                  boxShadow: '0 0 12px hsla(var(--primary), 0.1)',
-                } : {}}
-              >
-                <item.icon className={`w-4 h-4 flex-shrink-0 ${active ? 'text-primary' : ''}`} />
-                <span>{item.label}</span>
-                {active && <ChevronRight className="w-3.5 h-3.5 ml-auto opacity-50" />}
-              </Link>
+              <div key={item.path}>
+                {showGroupLabel && (
+                  <p className={`text-[10px] uppercase tracking-wider text-sidebar-foreground/40 px-3 ${idx > 0 ? "pt-3 pb-1" : "pb-1"}`}>
+                    {item.group}
+                  </p>
+                )}
+                <Link
+                  to={item.path}
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-all duration-200 ${
+                    active
+                      ? "text-sidebar-accent-foreground font-medium border-l-2 border-primary"
+                      : "text-sidebar-foreground hover:text-sidebar-accent-foreground border-l-2 border-transparent"
+                  }`}
+                  style={active ? {
+                    background: 'hsla(var(--primary), 0.08)',
+                    boxShadow: '0 0 12px hsla(var(--primary), 0.1)',
+                  } : {}}
+                >
+                  <item.icon className={`w-4 h-4 flex-shrink-0 ${active ? 'text-primary' : ''}`} />
+                  <span>{item.label}</span>
+                  {active && <ChevronRight className="w-3.5 h-3.5 ml-auto opacity-50" />}
+                </Link>
+              </div>
             );
           })}
         </nav>

@@ -16,6 +16,9 @@ import CustomerDrilldown from "./pages/CustomerDrilldown";
 import ReportsHub from "./pages/ReportsHub";
 import AgentAdoption from "./pages/AgentAdoption";
 import AdoptionHealth from "./pages/AdoptionHealth";
+import FeatureInsights from "./pages/FeatureInsights";
+import AgentInsights from "./pages/AgentInsights";
+import CaseTimeInsights from "./pages/CaseTimeInsights";
 import DataManagement from "./pages/DataManagement";
 import Login from "./pages/Login";
 import PendingApproval from "./pages/PendingApproval";
@@ -48,6 +51,9 @@ const App = () => (
                               <Route path="/drilldown" element={<CustomerDrilldown />} />
                               <Route path="/agent-adoption" element={<AgentAdoption />} />
                               <Route path="/adoption-health" element={<AdoptionHealth />} />
+                              <Route path="/insights/features" element={<FeatureInsights />} />
+                              <Route path="/insights/agents" element={<AgentInsights />} />
+                              <Route path="/insights/cases" element={<CaseTimeInsights />} />
                               <Route path="/reports" element={<ReportsHub />} />
                               <Route path="/data" element={<DataManagement />} />
                               <Route path="*" element={<NotFound />} />
