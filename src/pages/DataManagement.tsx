@@ -5,7 +5,7 @@ import { TenantConfigTable } from "@/components/dashboard/TenantConfigTable";
 import { detectAndParseEventsCSV, parseCustomersCSV, parseScoresCSV } from "@/lib/csv-parser";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Database, FileText } from "lucide-react";
+import { Database, FileText, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface UploadResult {
@@ -15,7 +15,7 @@ interface UploadResult {
 }
 
 export default function DataManagement() {
-  const { data, setEvents, setCustomers, setScores } = useData();
+  const { data, setEvents, setCustomers, setScores, hasData } = useData();
   const [eventsResult, setEventsResult] = useState<UploadResult | null>(null);
   const [customersResult, setCustomersResult] = useState<UploadResult | null>(null);
   const [scoresResult, setScoresResult] = useState<UploadResult | null>(null);
@@ -32,7 +32,7 @@ export default function DataManagement() {
     const formatLabel = result.detectedFormat === "agent_helper" ? "Agent Helper format detected. " : "";
     setEventsResult({
       success: true,
-      message: `${formatLabel}${result.events.length.toLocaleString()} events loaded. ${uniqueCustomers} customers, ${uniqueUsers} users.${
+      message: `${formatLabel}Dataset replaced successfully. ${result.events.length.toLocaleString()} events loaded. ${uniqueCustomers} customers, ${uniqueUsers} users.${
         result.errors.length > 0 ? " " + result.errors.join("; ") : ""
       }`,
       detectedFormat: result.detectedFormat,
@@ -59,13 +59,16 @@ export default function DataManagement() {
     setScoresResult({ success: true, message: `${result.scores.length} scores loaded.` });
   };
 
-  const stats = {
-    events: data.events.length,
+  // Data Integrity Summary - computed directly from data.events
+  const integrityStats = hasData ? {
+    rows: data.events.length,
     customers: new Set(data.events.map(e => e.customer_id)).size,
     users: new Set(data.events.map(e => e.user_id)).size,
-    scores: data.scores.length,
-    customerRecords: data.customers.length,
-  };
+    dateMin: data.events.reduce((min, e) => e.event_time < min ? e.event_time : min, data.events[0].event_time),
+    dateMax: data.events.reduce((max, e) => e.event_time > max ? e.event_time : max, data.events[0].event_time),
+    modules: new Set(data.events.map(e => e.feature)).size,
+    cases: new Set(data.events.map(e => e.case_id).filter(Boolean)).size,
+  } : null;
 
   return (
     <div className="p-6 space-y-6 max-w-[1000px]">
@@ -74,40 +77,51 @@ export default function DataManagement() {
         <p className="text-sm text-muted-foreground mt-0.5">Upload and manage your CSV data</p>
       </div>
 
-      {/* Current data summary */}
-      <Card className="p-5 border bg-card">
-        <div className="flex items-center gap-2 mb-4">
-          <Database className="w-4 h-4 text-primary" />
-          <h3 className="text-sm font-semibold text-card-foreground">Current Dataset</h3>
-          {eventsResult?.detectedFormat && (
-            <Badge variant="secondary" className="text-[10px] h-5">
-              {eventsResult.detectedFormat === "agent_helper" ? "Agent Helper Format" : "Standard Format"}
-            </Badge>
+      {/* Data Integrity Summary */}
+      {integrityStats ? (
+        <Card className="p-5 border-2 border-primary/30 bg-card">
+          <div className="flex items-center gap-2 mb-4">
+            <ShieldCheck className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-semibold text-card-foreground">Data Integrity Summary</h3>
+            {eventsResult?.detectedFormat && (
+              <Badge variant="secondary" className="text-[10px] h-5">
+                {eventsResult.detectedFormat === "agent_helper" ? "Agent Helper Format" : "Standard Format"}
+              </Badge>
+            )}
+          </div>
+          <div className="border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="text-xs">Metric</TableHead>
+                  <TableHead className="text-xs text-right">Value</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow><TableCell className="text-sm">Rows Imported</TableCell><TableCell className="text-sm text-right tabular-nums font-medium">{integrityStats.rows.toLocaleString()}</TableCell></TableRow>
+                <TableRow><TableCell className="text-sm">Unique Customers</TableCell><TableCell className="text-sm text-right tabular-nums font-medium">{integrityStats.customers}</TableCell></TableRow>
+                <TableRow><TableCell className="text-sm">Unique Users</TableCell><TableCell className="text-sm text-right tabular-nums font-medium">{integrityStats.users}</TableCell></TableRow>
+                <TableRow><TableCell className="text-sm">Date Range</TableCell><TableCell className="text-sm text-right tabular-nums font-medium">{integrityStats.dateMin.toISOString().slice(0, 10)} → {integrityStats.dateMax.toISOString().slice(0, 10)}</TableCell></TableRow>
+                <TableRow><TableCell className="text-sm">Modules Detected</TableCell><TableCell className="text-sm text-right tabular-nums font-medium">{integrityStats.modules}</TableCell></TableRow>
+                <TableRow><TableCell className="text-sm">Cases Detected</TableCell><TableCell className="text-sm text-right tabular-nums font-medium">{integrityStats.cases}</TableCell></TableRow>
+              </TableBody>
+            </Table>
+          </div>
+          {data.lastUpload && (
+            <p className="text-xs text-muted-foreground mt-3">
+              Last updated: {data.lastUpload.toLocaleString()}
+            </p>
           )}
-        </div>
-        <div className="border rounded-lg overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="text-xs">Metric</TableHead>
-                <TableHead className="text-xs text-right">Count</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow><TableCell className="text-sm">Total Events</TableCell><TableCell className="text-sm text-right tabular-nums font-medium">{stats.events.toLocaleString()}</TableCell></TableRow>
-              <TableRow><TableCell className="text-sm">Unique Customers</TableCell><TableCell className="text-sm text-right tabular-nums font-medium">{stats.customers}</TableCell></TableRow>
-              <TableRow><TableCell className="text-sm">Unique Users</TableCell><TableCell className="text-sm text-right tabular-nums font-medium">{stats.users}</TableCell></TableRow>
-              <TableRow><TableCell className="text-sm">Customer Records</TableCell><TableCell className="text-sm text-right tabular-nums font-medium">{stats.customerRecords}</TableCell></TableRow>
-              <TableRow><TableCell className="text-sm">Score Records</TableCell><TableCell className="text-sm text-right tabular-nums font-medium">{stats.scores}</TableCell></TableRow>
-            </TableBody>
-          </Table>
-        </div>
-        {data.lastUpload && (
-          <p className="text-xs text-muted-foreground mt-3">
-            Last updated: {data.lastUpload.toLocaleString()}
-          </p>
-        )}
-      </Card>
+        </Card>
+      ) : (
+        <Card className="p-5 border bg-card">
+          <div className="flex items-center gap-2 mb-2">
+            <Database className="w-4 h-4 text-muted-foreground" />
+            <h3 className="text-sm font-semibold text-card-foreground">No Dataset</h3>
+          </div>
+          <p className="text-sm text-muted-foreground">No dataset uploaded. Please upload Agent Helper CSV to view analytics.</p>
+        </Card>
+      )}
 
       {/* Upload panels */}
       <div className="space-y-4">

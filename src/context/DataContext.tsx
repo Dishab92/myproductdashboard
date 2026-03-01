@@ -1,6 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, ReactNode } from "react";
 import { AppData, EventRecord, CustomerRecord, ScoreRecord, AgentAdoptionRecord, DateRange, TenantConfig } from "@/lib/types";
-import { generateMockEvents, generateMockCustomers, generateMockScores } from "@/lib/mock-data";
 
 interface DataContextType {
   data: AppData;
@@ -19,13 +18,6 @@ interface DataContextType {
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
-
-function getDefaultDateRange(days: number, label: string): DateRange {
-  const to = new Date();
-  const from = new Date();
-  from.setDate(from.getDate() - days);
-  return { from, to, label };
-}
 
 function loadTenantConfig(): TenantConfig[] {
   try {
@@ -76,17 +68,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     tenantConfig: loadTenantConfig(),
     lastUpload: null,
   });
-  const [dateRange, setDateRange] = useState<DateRange>(getDefaultDateRange(30, "30 Days"));
+  const [dateRange, setDateRange] = useState<DateRange>({ from: new Date(), to: new Date(), label: "No Data" });
   const [productFilter, setProductFilter] = useState("All");
   const [releaseFilter, setReleaseFilter] = useState("All");
-
-  // Load mock data on mount
-  useEffect(() => {
-    const events = generateMockEvents();
-    const customers = generateMockCustomers();
-    const scores = generateMockScores();
-    setData(prev => ({ ...prev, events, customers, scores, lastUpload: new Date() }));
-  }, []);
 
   const hasData = data.events.length > 0;
 
@@ -95,7 +79,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setData(prev => {
       const updatedEvents = applyTenantConfig(prev.events, config);
       const configCustomers = generateCustomersFromConfig(config);
-      // Merge: keep non-config customers, add config ones
       const configIds = new Set(config.map(c => c.tenant_id));
       const existingCustomers = prev.customers.filter(c => !configIds.has(c.customer_id));
       return {
@@ -118,9 +101,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
         releaseFilter,
         setReleaseFilter,
         setEvents: (events) => {
+          // FULL REPLACEMENT - clear all previous data
+          const sorted = [...events].sort((a, b) => a.event_time.getTime() - b.event_time.getTime());
+          const from = sorted[0]?.event_time || new Date();
+          const to = sorted[sorted.length - 1]?.event_time || new Date();
+
+          console.log("[DataImport] Rows:", events.length);
+          console.log("[DataImport] Earliest:", from.toISOString());
+          console.log("[DataImport] Latest:", to.toISOString());
+
+          setDateRange({ from, to, label: "All Data" });
           setData(prev => ({
             ...prev,
             events: applyTenantConfig(events, prev.tenantConfig),
+            customers: generateCustomersFromConfig(prev.tenantConfig),
+            scores: [],
+            agentAdoption: [],
             lastUpload: new Date(),
           }));
         },

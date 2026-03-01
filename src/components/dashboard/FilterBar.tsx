@@ -1,34 +1,50 @@
+import { useMemo } from "react";
 import { useData } from "@/context/DataContext";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const DATE_PRESETS = [
-  { label: "7 Days", days: 7 },
-  { label: "30 Days", days: 30 },
-  { label: "90 Days", days: 90 },
-  { label: "6 Months", days: 180 },
-];
-
 export function FilterBar() {
-  const { dateRange, setDateRange, productFilter, setProductFilter, releaseFilter, setReleaseFilter } = useData();
+  const { data, dateRange, setDateRange, productFilter, setProductFilter, releaseFilter, setReleaseFilter } = useData();
 
-  const handleDatePreset = (days: number, label: string) => {
-    const to = new Date();
-    const from = new Date();
-    from.setDate(from.getDate() - days);
-    setDateRange({ from, to, label });
-  };
+  const { dataMin, dataMax } = useMemo(() => {
+    if (data.events.length === 0) return { dataMin: null, dataMax: null };
+    let min = data.events[0].event_time;
+    let max = data.events[0].event_time;
+    for (const e of data.events) {
+      if (e.event_time < min) min = e.event_time;
+      if (e.event_time > max) max = e.event_time;
+    }
+    return { dataMin: min, dataMax: max };
+  }, [data.events]);
+
+  const presets = useMemo(() => {
+    if (!dataMin || !dataMax) return [];
+    const clamp = (d: Date) => new Date(Math.max(d.getTime(), dataMin.getTime()));
+    return [
+      { label: "All Data", from: dataMin, to: dataMax },
+      { label: "Last 7 Days", from: clamp(new Date(dataMax.getTime() - 7 * 86400000)), to: dataMax },
+      { label: "Last 30 Days", from: clamp(new Date(dataMax.getTime() - 30 * 86400000)), to: dataMax },
+      { label: "Last 90 Days", from: clamp(new Date(dataMax.getTime() - 90 * 86400000)), to: dataMax },
+    ];
+  }, [dataMin, dataMax]);
+
+  const releaseOptions = useMemo(() => {
+    const releases = new Set(data.customers.map(c => c.release).filter(Boolean));
+    return Array.from(releases).sort();
+  }, [data.customers]);
+
+  if (!dataMin || !dataMax) return null;
 
   return (
     <div className="flex items-center gap-3 flex-wrap">
       <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
-        {DATE_PRESETS.map(p => (
+        {presets.map(p => (
           <Button
-            key={p.days}
+            key={p.label}
             size="sm"
             variant={dateRange.label === p.label ? "default" : "ghost"}
             className="h-7 text-xs px-3"
-            onClick={() => handleDatePreset(p.days, p.label)}
+            onClick={() => setDateRange({ from: p.from, to: p.to, label: p.label })}
           >
             {p.label}
           </Button>
@@ -46,21 +62,19 @@ export function FilterBar() {
         </SelectContent>
       </Select>
 
-      <Select value={releaseFilter} onValueChange={setReleaseFilter}>
-        <SelectTrigger className="w-[160px] h-8 text-xs">
-          <SelectValue placeholder="Release" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="All">All Releases</SelectItem>
-          <SelectItem value="Q2:2024">Q2:2024</SelectItem>
-          <SelectItem value="Q3:2024">Q3:2024</SelectItem>
-          <SelectItem value="Q4:2024">Q4:2024</SelectItem>
-          <SelectItem value="Q1:2025">Q1:2025</SelectItem>
-          <SelectItem value="Q2:2025">Q2:2025</SelectItem>
-          <SelectItem value="Q3:2025">Q3:2025</SelectItem>
-          <SelectItem value="Yet to Go-Live">Yet to Go-Live</SelectItem>
-        </SelectContent>
-      </Select>
+      {releaseOptions.length > 0 && (
+        <Select value={releaseFilter} onValueChange={setReleaseFilter}>
+          <SelectTrigger className="w-[160px] h-8 text-xs">
+            <SelectValue placeholder="Release" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="All">All Releases</SelectItem>
+            {releaseOptions.map(r => (
+              <SelectItem key={r} value={r}>{r}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
     </div>
   );
 }
