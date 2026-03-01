@@ -49,7 +49,6 @@ function buildMetadataJson(row: Record<string, string>): string | undefined {
       if (parsed.response_time != null) meta.response_time_ms = parseInt(parsed.response_time);
       if (parsed.api_status != null) meta.api_status = parseInt(parsed.api_status);
     } catch {
-      // metric not JSON, store raw
       meta.metric_raw = row.metric;
     }
   }
@@ -85,30 +84,48 @@ export function detectAndParseEventsCSV(text: string, tenantConfig?: TenantConfi
 function parseAgentHelperFormat(text: string, _headers: string[], tenantConfig?: TenantConfig[]): DetectedParseResult {
   const rows = parseCSV(text);
   const errors: string[] = [];
+  const warnings: string[] = [];
   const seen = new Set<string>();
   const events: EventRecord[] = [];
   let invalidDates = 0;
+  let hardErrors = 0;
+  let invalidMetricJson = 0;
+  let missingCaseNumber = 0;
 
   const configMap = new Map<string, TenantConfig>();
   tenantConfig?.forEach(c => configMap.set(c.tenant_id, c));
 
   for (const row of rows) {
-    const dt = new Date(row.ts);
+    // Hard-error validation: required fields must be non-empty
+    const tenantId = (row.tenant_id || "").trim();
+    const userId = (row.user_id || "").trim();
+    const featureCategory = (row.feature_category || "").trim();
+    const featureName = (row.feature_name || "").trim();
+    const interactionTypeRaw = (row.interaction_type || "").trim();
+    const tsRaw = (row.ts || "").trim();
+
+    if (!tenantId || !userId || !featureCategory || !featureName || !interactionTypeRaw || !tsRaw) {
+      hardErrors++;
+      continue;
+    }
+
+    const dt = new Date(tsRaw);
     if (isNaN(dt.getTime())) { invalidDates++; continue; }
 
-    const tenantId = row.tenant_id || "";
-    const userId = row.user_id || "";
-    const featureCategory = row.feature_category || "";
-    const featureName = row.feature_name || "";
-    const interactionType = normalizeInteractionType(row.interaction_type || "");
-
+    const interactionType = normalizeInteractionType(interactionTypeRaw);
     const eventName = `${interactionType}:${featureCategory}:${featureName}`;
     const dateStr = dt.toISOString().slice(0, 10).replace(/-/g, "");
     const sessionId = `${userId}-${dateStr}`;
 
-    const key = `${row.ts}-${userId}-${eventName}`;
+    const key = `${tsRaw}-${userId}-${eventName}`;
     if (seen.has(key)) continue;
     seen.add(key);
+
+    // Track optional field warnings
+    if (row.metric && row.metric.trim()) {
+      try { JSON.parse(row.metric); } catch { invalidMetricJson++; }
+    }
+    if (!row.case_number || !row.case_number.trim()) missingCaseNumber++;
 
     const config = configMap.get(tenantId);
     const customerName = config?.customer_name || tenantId;
@@ -122,12 +139,37 @@ function parseAgentHelperFormat(text: string, _headers: string[], tenantConfig?:
       session_id: sessionId,
       event_name: eventName,
       feature: featureCategory,
-      case_id: row.case_number || undefined,
+      case_id: row.case_number?.trim() || undefined,
       metadata_json: buildMetadataJson(row),
     });
   }
 
+  // Majority-failure checks
+  if (rows.length > 0 && hardErrors > rows.length * 0.5) {
+    return {
+      events: [],
+      errors: [`Import stopped: ${hardErrors} of ${rows.length} rows missing required fields (tenant_id, user_id, feature_category, feature_name, interaction_type, ts).`],
+      total: rows.length,
+      detectedFormat: "agent_helper",
+    };
+  }
+
+  if (rows.length > 0 && invalidDates > rows.length * 0.5) {
+    return {
+      events: [],
+      errors: ["Invalid datetime format in ts column. Import stopped. Over 50% of rows had unparseable timestamps."],
+      total: rows.length,
+      detectedFormat: "agent_helper",
+    };
+  }
+
+  if (hardErrors > 0) errors.push(`${hardErrors} rows skipped (missing required fields)`);
   if (invalidDates > 0) errors.push(`${invalidDates} rows with unparseable timestamps skipped`);
+  if (invalidMetricJson > 0) warnings.push(`${invalidMetricJson} rows had invalid metric JSON`);
+  if (missingCaseNumber > 0) warnings.push(`${missingCaseNumber} rows without case_number`);
+
+  // Append warnings to errors array for display
+  errors.push(...warnings);
 
   return { events, errors, total: rows.length, detectedFormat: "agent_helper" };
 }
@@ -248,7 +290,6 @@ export function parseAgentAdoptionCSV(text: string, customerName: string): { rec
   const records: AgentAdoptionRecord[] = [];
 
   for (const row of rows) {
-    // Parse DD-MM-YYYY format
     const parts = row.date?.split("-");
     let dt: Date;
     if (parts && parts.length === 3) {
