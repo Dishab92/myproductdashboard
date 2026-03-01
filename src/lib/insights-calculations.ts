@@ -117,8 +117,8 @@ export function getSubFeatureLeaderboard(
   }
 
   return Array.from(map.entries())
-    .map(([, v]) => {
-      const parts = Array.from(map.entries()).find(([, val]) => val === v)![0].split("||");
+    .map(([key, v]) => {
+      const parts = key.split("||");
       return {
         subFeature: parts[1],
         module: v.module,
@@ -248,6 +248,7 @@ export interface CaseEngagedTime {
 
 export interface AgentEngagedTime {
   userId: string;
+  userName: string;
   totalEngagedMs: number;
   avgPerCase: number;
   casesTouched: number;
@@ -355,7 +356,7 @@ export function getAgentEngagedTime(events: EventRecord[], gapThresholdMinutes =
     arr.push(e);
   }
 
-  const agentMap = new Map<string, { totalMs: number; cases: Set<string> }>();
+  const agentMap = new Map<string, { userName: string; totalMs: number; cases: Set<string> }>();
 
   for (const [, groupEvents] of groups) {
     const sorted = [...groupEvents].sort((a, b) => a.event_time.getTime() - b.event_time.getTime());
@@ -363,7 +364,7 @@ export function getAgentEngagedTime(events: EventRecord[], gapThresholdMinutes =
     const caseId = sorted[0].case_id!;
 
     let entry = agentMap.get(userId);
-    if (!entry) { entry = { totalMs: 0, cases: new Set() }; agentMap.set(userId, entry); }
+    if (!entry) { entry = { userName: userId, totalMs: 0, cases: new Set() }; agentMap.set(userId, entry); }
     entry.cases.add(caseId);
 
     let burstStart = sorted[0].event_time.getTime();
@@ -379,6 +380,7 @@ export function getAgentEngagedTime(events: EventRecord[], gapThresholdMinutes =
   return Array.from(agentMap.entries())
     .map(([userId, v]) => ({
       userId,
+      userName: v.userName,
       totalEngagedMs: v.totalMs,
       avgPerCase: v.cases.size > 0 ? Math.round(v.totalMs / v.cases.size) : 0,
       casesTouched: v.cases.size,
