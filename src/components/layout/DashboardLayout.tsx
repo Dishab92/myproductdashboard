@@ -27,6 +27,7 @@ const NAV_ITEMS = [
   { path: "/reports", label: "Reports Hub", icon: FileBarChart, group: "Tools" },
   { path: "/data", label: "Data Management", icon: Database, group: "Tools" },
   { path: "/roadmap", label: "Roadmap", icon: Map, group: "Roadmap" },
+  { path: "/roadmap/agent-helper", label: "Agent Helper", icon: Map, group: "Roadmap" },
 ];
 
 const PAGE_TITLES: Record<string, string> = {
@@ -41,6 +42,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/reports": "Reports Hub",
   "/data": "Data Management",
   "/roadmap": "Roadmap",
+  "/roadmap/agent-helper": "Agent Helper Roadmap",
 };
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -62,7 +64,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </div>
         <nav className="flex-1 py-3 px-3 space-y-0.5 overflow-y-auto">
           {NAV_ITEMS.map((item, idx) => {
-            const active = location.pathname === item.path;
+            const active = location.pathname === item.path || (item.path !== "/" && location.pathname.startsWith(item.path + "/"));
             const prevGroup = idx > 0 ? NAV_ITEMS[idx - 1].group : null;
             const showGroupLabel = item.group !== prevGroup;
             return (

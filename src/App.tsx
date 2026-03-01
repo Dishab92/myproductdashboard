@@ -24,6 +24,7 @@ import Login from "./pages/Login";
 import PendingApproval from "./pages/PendingApproval";
 import NotFound from "./pages/NotFound";
 import Roadmap from "./pages/Roadmap";
+import AgentHelperRoadmap from "./pages/AgentHelperRoadmap";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,7 @@ const App = () => (
                               <Route path="/reports" element={<ReportsHub />} />
                               <Route path="/data" element={<DataManagement />} />
                               <Route path="/roadmap" element={<Roadmap />} />
+                              <Route path="/roadmap/agent-helper" element={<AgentHelperRoadmap />} />
                               <Route path="*" element={<NotFound />} />
                             </Routes>
                           </DashboardLayout>

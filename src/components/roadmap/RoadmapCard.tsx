@@ -18,6 +18,17 @@ export interface RoadmapItem {
   owner_id: string;
   created_at: string;
   updated_at: string;
+  // Agent Helper extensions
+  target_bucket?: string;
+  sprint?: string;
+  jira_link?: string;
+  feature_type?: string;
+  feature_source?: string;
+  score_common_customer_ask?: number;
+  score_competitor_market_research?: number;
+  score_seller_prospect_input?: number;
+  score_technical_debt?: number;
+  score_executive_input?: number;
 }
 
 const PRODUCT_COLORS: Record<string, string> = {
