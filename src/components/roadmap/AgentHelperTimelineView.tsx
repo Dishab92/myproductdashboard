@@ -19,9 +19,10 @@ interface AgentHelperTimelineViewProps {
   weights: ScoringWeights;
   onEdit: (item: RoadmapItem) => void;
   customerSafe: boolean;
+  isAdmin: boolean;
 }
 
-export function AgentHelperTimelineView({ items, weights, onEdit, customerSafe }: AgentHelperTimelineViewProps) {
+export function AgentHelperTimelineView({ items, weights, onEdit, customerSafe, isAdmin }: AgentHelperTimelineViewProps) {
   const scored = items.map((item) => ({
     ...item,
     weightedScore: computeWeightedScore(item as any, weights),
@@ -51,8 +52,8 @@ export function AgentHelperTimelineView({ items, weights, onEdit, customerSafe }
               .map((item) => (
               <div
                 key={item.id}
-                className="rounded-lg border border-border bg-card p-3 space-y-2 cursor-pointer hover:border-primary/40 transition-colors"
-                onClick={() => onEdit(item)}
+                className={cn("rounded-lg border border-border bg-card p-3 space-y-2 transition-colors", isAdmin && "cursor-pointer hover:border-primary/40")}
+                onClick={() => isAdmin && onEdit(item)}
               >
                 <div className="flex items-start justify-between gap-2">
                   <h4 className="text-sm font-medium text-foreground leading-tight flex-1">{item.title}</h4>

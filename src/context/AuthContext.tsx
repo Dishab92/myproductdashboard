@@ -17,6 +17,8 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   isApproved: boolean;
+  isAdmin: boolean;
+  role: 'admin' | 'moderator' | 'user' | null;
   loading: boolean;
   signOut: () => Promise<void>;
   recheckApproval: () => Promise<void>;
@@ -28,7 +30,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [role, setRole] = useState<'admin' | 'moderator' | 'user' | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const fetchRole = async (userId: string) => {
+    const { data } = await (supabase.from("user_roles") as any)
+      .select("role")
+      .eq("user_id", userId)
+      .maybeSingle();
+    setRole(data?.role ?? 'user');
+  };
 
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
@@ -39,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (!error && data) {
       setProfile(data as Profile);
+      fetchRole(userId);
 
       // If new user (not approved), trigger notify-admin
       if (!data.approved) {
@@ -80,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setSession(null);
     setProfile(null);
+    setRole(null);
   };
 
   useEffect(() => {
@@ -118,6 +131,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         profile,
         isApproved: profile?.approved ?? false,
+        isAdmin: role === 'admin',
+        role,
         loading,
         signOut,
         recheckApproval,
