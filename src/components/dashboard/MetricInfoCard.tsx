@@ -42,12 +42,12 @@ function DefinitionPanel({ metricId }: { metricId: string }) {
 }
 
 export function MetricInfoCard({ metricId, className }: MetricInfoCardProps) {
-  const { isSnapshotMode, options } = useSnapshot();
+  const { isSnapshotMode } = useSnapshot();
   const def = getMetricDefinition(metricId);
   if (!def) return null;
 
   // Pinned mode in snapshot
-  if (isSnapshotMode && options.includeDefinitions) {
+  if (isSnapshotMode) {
     return (
       <div className={`mt-3 p-3 rounded-lg glass border-glow-cyan w-full overflow-visible break-words ${className || ""}`}>
         <DefinitionPanel metricId={metricId} />

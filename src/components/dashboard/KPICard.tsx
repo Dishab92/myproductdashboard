@@ -14,8 +14,8 @@ interface KPICardProps {
 }
 
 export function KPICard({ title, value, subtitle, trend, icon, tooltip, metricId }: KPICardProps) {
-  const { isSnapshotMode, options } = useSnapshot();
-  const showPinnedDefinition = isSnapshotMode && options.includeDefinitions && metricId;
+  const { isSnapshotMode } = useSnapshot();
+  const showPinnedDefinition = isSnapshotMode && metricId;
 
   return (
     <div className="glass-strong rounded-lg p-5 border-glow-cyan shimmer-border group hover:scale-[1.02] transition-all duration-300 overflow-visible"

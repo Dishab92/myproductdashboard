@@ -13,7 +13,7 @@ import { AlertTriangle, TrendingDown, BarChart3 } from "lucide-react";
 
 export default function AdoptionHealth() {
   const { data, dateRange, productFilter } = useData();
-  const { isSnapshotMode, options } = useSnapshot();
+  const { isSnapshotMode } = useSnapshot();
 
   const filtered = useMemo(() => {
     let evts = filterEventsByDateRange(data.events, dateRange.from, dateRange.to);
@@ -50,7 +50,7 @@ export default function AdoptionHealth() {
         <p className="text-sm text-muted-foreground">Cohort analysis and risk detection</p>
       </div>
 
-      {(!isSnapshotMode || options.includeFilters) && <FilterBar />}
+      <FilterBar />
 
       {/* Section A: Cohort Analysis */}
       <div>

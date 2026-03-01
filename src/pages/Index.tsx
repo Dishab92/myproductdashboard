@@ -20,7 +20,7 @@ import { CustomerMetrics } from "@/lib/types";
 
 export default function PortfolioOverview() {
   const { data, dateRange, productFilter, releaseFilter, hasData } = useData();
-  const { isSnapshotMode, options } = useSnapshot();
+  const { isSnapshotMode } = useSnapshot();
   const navigate = useNavigate();
 
   const metrics = useMemo(() => {
@@ -109,7 +109,7 @@ export default function PortfolioOverview() {
           <h1 className="text-xl font-extrabold text-gradient-cyan">Portfolio Overview</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Cross-product health at a glance</p>
         </div>
-        {(!isSnapshotMode || options.includeFilters) && <FilterBar />}
+        <FilterBar />
       </div>
 
       <InsightPanel insights={insights} />
@@ -129,7 +129,7 @@ export default function PortfolioOverview() {
       </div>
 
       {/* Alerts */}
-      {alerts.length > 0 && (!isSnapshotMode || options.includeAlerts) && (
+      {alerts.length > 0 && (
         <Card className="p-4 animate-slide-up" style={{ animationDelay: '0.4s', opacity: 0, borderLeft: '2px solid hsl(var(--health-amber))' }}>
           <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-health-amber" />

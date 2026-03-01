@@ -11,9 +11,9 @@ interface WeightScoreBadgeProps {
 
 export function WeightScoreBadge({ scores, weights, total }: WeightScoreBadgeProps) {
   const color =
-    total >= 80 ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" :
-    total >= 50 ? "bg-amber-500/20 text-amber-300 border-amber-500/30" :
-    "bg-red-500/20 text-red-300 border-red-500/30";
+    total >= 80 ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30" :
+    total >= 50 ? "bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30" :
+    "bg-red-500/20 text-red-700 dark:text-red-300 border-red-500/30";
 
   const breakdown = getScoreBreakdown(scores, weights);
 

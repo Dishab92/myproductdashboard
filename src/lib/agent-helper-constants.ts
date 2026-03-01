@@ -76,31 +76,31 @@ export function getScoreBreakdown(
 }
 
 export const STATUS_COLORS: Record<string, string> = {
-  "Complete": "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  "In Development": "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  "In QA": "bg-violet-500/20 text-violet-300 border-violet-500/30",
+  "Complete": "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
+  "In Development": "bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30",
+  "In QA": "bg-violet-500/20 text-violet-700 dark:text-violet-300 border-violet-500/30",
   "To Do": "bg-muted text-muted-foreground border-border",
-  "Grooming to be planned": "bg-amber-500/20 text-amber-300 border-amber-500/30",
-  "In Story writing": "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
-  "On Hold": "bg-red-500/20 text-red-300 border-red-500/30",
-  "To be planned for dev": "bg-orange-500/20 text-orange-300 border-orange-500/30",
-  "In Review": "bg-pink-500/20 text-pink-300 border-pink-500/30",
+  "Grooming to be planned": "bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30",
+  "In Story writing": "bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border-cyan-500/30",
+  "On Hold": "bg-red-500/20 text-red-700 dark:text-red-300 border-red-500/30",
+  "To be planned for dev": "bg-orange-500/20 text-orange-700 dark:text-orange-300 border-orange-500/30",
+  "In Review": "bg-pink-500/20 text-pink-700 dark:text-pink-300 border-pink-500/30",
 };
 
 export const FEATURE_TYPE_COLORS: Record<string, string> = {
-  "New Feature": "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
-  "UX Improvement": "bg-violet-500/20 text-violet-300 border-violet-500/30",
-  "Analytics and Reporting": "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  "Enhancement/Optimization": "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  "Relevance": "bg-amber-500/20 text-amber-300 border-amber-500/30",
-  "Technical Debt": "bg-red-500/20 text-red-300 border-red-500/30",
+  "New Feature": "bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border-cyan-500/30",
+  "UX Improvement": "bg-violet-500/20 text-violet-700 dark:text-violet-300 border-violet-500/30",
+  "Analytics and Reporting": "bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30",
+  "Enhancement/Optimization": "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
+  "Relevance": "bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30",
+  "Technical Debt": "bg-red-500/20 text-red-700 dark:text-red-300 border-red-500/30",
 };
 
 export const FEATURE_SOURCE_COLORS: Record<string, string> = {
-  "Product": "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  "Customer Request": "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  "CSM": "bg-violet-500/20 text-violet-300 border-violet-500/30",
-  "Sales": "bg-amber-500/20 text-amber-300 border-amber-500/30",
-  "Executive": "bg-pink-500/20 text-pink-300 border-pink-500/30",
-  "Technical Debt": "bg-red-500/20 text-red-300 border-red-500/30",
+  "Product": "bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30",
+  "Customer Request": "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
+  "CSM": "bg-violet-500/20 text-violet-700 dark:text-violet-300 border-violet-500/30",
+  "Sales": "bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30",
+  "Executive": "bg-pink-500/20 text-pink-700 dark:text-pink-300 border-pink-500/30",
+  "Technical Debt": "bg-red-500/20 text-red-700 dark:text-red-300 border-red-500/30",
 };
