@@ -1,34 +1,164 @@
 
-# Fix Pinned Definition Cards Layout
+# Adoption Health Page: Cohort Analysis + Risk Engine
 
-The pinned definition panels in Snapshot Mode are rendering inside the KPI card's title flex row, causing overlap and text truncation. Two changes fix this:
+A new "Adoption Health" page added to the sidebar with two major sections: Cohort Analysis (heatmap + retention curve) and a Risk Engine (scored leaderboard with breakdown panel and suggested actions). Fully Snapshot Mode compatible.
 
-## 1. Move pinned definition below KPI content (`src/components/dashboard/KPICard.tsx`)
+---
 
-Currently, `MetricInfoCard` sits inline in the title's `flex items-center` row. In Snapshot Mode, the pinned panel expands but gets constrained by the flex layout.
+## 1. New Types (`src/lib/types.ts`)
 
-**Fix**: Render `MetricInfoCard` in two places conditionally:
-- In normal mode: keep the info icon inline in the title row (current behavior)
-- In Snapshot Mode: move the pinned definition panel below the entire KPI content block, as a full-width child of the card
+Add these interfaces:
 
-This means the KPI card structure changes to:
-```
-<card>
-  <flex row>  (title + value + icon + trend -- unchanged)
-  </flex row>
-  {isSnapshotMode && <MetricInfoCard />}  (full-width, below content)
-</card>
-```
+- `CohortRow` -- `{ cohortLabel: string; goLiveMonth: string; weeks: { week: number; score: number; activeUsersPct: number }[] }`
+- `RiskAssessment` -- `{ customer_id: string; customer_name: string; riskScore: number; riskLevel: "Low" | "Medium" | "High"; triggers: RiskTrigger[]; momentum: number; health: HealthStatus; adoptionScore: number; suggestedActions: string[] }`
+- `RiskTrigger` -- `{ rule: string; points: number; description: string }`
 
-## 2. Ensure pinned panel has proper sizing (`src/components/dashboard/MetricInfoCard.tsx`)
+---
 
-Add `overflow-visible` and `w-full` to the pinned panel container so text wraps cleanly instead of truncating. Also add `break-words` for long formula text.
+## 2. Risk & Cohort Calculations (`src/lib/risk-calculations.ts`)
 
-## Files Modified
+New file with pure calculation functions:
 
-| File | Change |
-|------|--------|
-| `src/components/dashboard/KPICard.tsx` | Move MetricInfoCard rendering: icon stays inline in normal mode, pinned panel renders below content in snapshot mode |
-| `src/components/dashboard/MetricInfoCard.tsx` | Add `w-full`, `break-words`, and `overflow-visible` to pinned panel; ensure text wraps cleanly |
+### `computeCohortData(events, customers, dateRange)`
+- Groups customers by `go_live_month` (formatted from `go_live_date`)
+- For each customer, computes `week_since_go_live = floor((event_date - go_live_date) / 7)` for weeks 0-12
+- Aggregates adoption score per cohort per week
+- Returns `CohortRow[]` for the heatmap
+- Computes active users % (vs week 0 baseline) for the retention curve
 
-No new dependencies. No logic changes.
+### `computeRiskAssessments(events, customers, customerMetrics, dateRange)`
+Applies 5 risk rules per customer:
+
+| Rule | Points | Detection |
+|------|--------|-----------|
+| No events 14 days | +30 | Check `lastActivity` vs now |
+| Active Users drop >40% WoW | +25 | Compare current vs prior week distinct users |
+| Only 1 module used for 4 weeks | +20 | Check distinct `product` values over trailing 4 weeks |
+| p95 latency >10000ms | +15 | Parse `metadata_json` for response_time (if present) |
+| Trust ratio drops >20% | +10 | Compare thumbs_up/(thumbs_up+thumbs_down) WoW |
+
+- Risk Score = sum of triggered rule points
+- Risk Level: 0-20 Low, 21-50 Medium, 51+ High
+- Each trigger maps to a suggested PM/CSM action
+
+### `getRiskSuggestedActions(triggers)`
+Maps each trigger to actionable text:
+- No events 14d -> "Schedule urgent check-in with CS owner"
+- Active Users drop -> "Investigate onboarding gaps and run re-engagement campaign"
+- Single module -> "Demo additional modules; create feature adoption plan"
+- High latency -> "Escalate to engineering; review API performance"
+- Trust ratio drop -> "Review AI response quality; analyze thumbs-down patterns"
+
+---
+
+## 3. Metric Definitions (`src/lib/metric-definitions.ts`)
+
+Add new entries:
+- `risk_score` -- "Composite risk score based on 5 weighted rules..."
+- `cohort_adoption` -- "Adoption score tracked by weeks since go-live..."
+- `retention_rate` -- "Percentage of active users retained vs week 0..."
+
+---
+
+## 4. New Page (`src/pages/AdoptionHealth.tsx`)
+
+Layout (top to bottom):
+
+### Header
+- Title: "Adoption Health"
+- Subtitle: "Cohort analysis and risk detection"
+- FilterBar (hidden in snapshot if `!options.includeFilters`)
+
+### Section A: Cohort Analysis (two cards side by side)
+
+**Cohort Heatmap** (left card, ~60% width)
+- Rows = cohort groups (by go_live_month, e.g. "Mar 2024", "Jun 2024")
+- Columns = weeks 0-12 since go-live
+- Cell value = average adoption score for that cohort at that week
+- Color scale: green (>=70) / yellow (40-69) / red (<40)
+- Built as a custom HTML table with colored cells (no heavy chart lib needed)
+- `MetricInfoCard` for `cohort_adoption`
+
+**Retention Curve** (right card, ~40% width)
+- Recharts `LineChart`
+- X-axis: week_since_go_live (0-12)
+- Y-axis: Active Users % (relative to week 0)
+- One line per cohort, color-coded
+- Legend with cohort labels
+- `MetricInfoCard` for `retention_rate`
+
+### Section B: Risk Engine
+
+**Risk KPI Cards** (3 cards)
+- High Risk Customers (count, red)
+- Medium Risk Customers (count, amber)
+- Average Risk Score (number)
+
+**Risk Leaderboard** (full-width table)
+- Columns: Customer | Risk Score | Risk Level | Primary Trigger | Momentum | Health Badge
+- Sorted by risk score descending
+- Clicking a row expands an inline panel (using Collapsible) showing:
+  - Risk Breakdown: each triggered rule with points and description
+  - Suggested Actions: bullet list of recommended PM/CSM actions
+  - Trigger severity bar (visual indicator)
+- Color-coded risk level badges (similar to HealthBadge)
+
+### Snapshot Mode Support
+- All `MetricInfoCard` components pin definitions when snapshot is active
+- Risk breakdown panels auto-expand for all High-risk customers
+- Upload/filter elements hidden per snapshot options
+
+---
+
+## 5. New Components
+
+### `src/components/dashboard/CohortHeatmap.tsx`
+- Renders an HTML table grid
+- Props: `data: CohortRow[]`
+- Cells colored with inline styles based on score thresholds
+- Tooltip on hover showing exact score value
+
+### `src/components/dashboard/RetentionChart.tsx`
+- Recharts LineChart wrapper
+- Props: `data: CohortRow[]`
+- One line per cohort with distinct colors
+
+### `src/components/dashboard/RiskLeaderboard.tsx`
+- Table with expandable rows (uses Radix Collapsible)
+- Props: `assessments: RiskAssessment[]`
+- Inline risk breakdown panel
+- Suggested actions list
+
+### `src/components/dashboard/RiskBadge.tsx`
+- Similar to HealthBadge but for risk levels
+- Low (green), Medium (amber), High (red with glow)
+
+---
+
+## 6. Navigation Updates
+
+### `src/components/layout/DashboardLayout.tsx`
+- Add nav item: `{ path: "/adoption-health", label: "Adoption Health", icon: ShieldAlert }`
+- Add page title mapping
+
+### `src/App.tsx`
+- Add route: `<Route path="/adoption-health" element={<AdoptionHealth />} />`
+
+---
+
+## Summary of All Files
+
+| Action | File |
+|--------|------|
+| Modify | `src/lib/types.ts` -- Add CohortRow, RiskAssessment, RiskTrigger interfaces |
+| Create | `src/lib/risk-calculations.ts` -- Cohort + risk computation functions |
+| Modify | `src/lib/metric-definitions.ts` -- Add risk_score, cohort_adoption, retention_rate definitions |
+| Create | `src/pages/AdoptionHealth.tsx` -- Main page with cohort + risk sections |
+| Create | `src/components/dashboard/CohortHeatmap.tsx` -- Heatmap table component |
+| Create | `src/components/dashboard/RetentionChart.tsx` -- Recharts retention curve |
+| Create | `src/components/dashboard/RiskLeaderboard.tsx` -- Expandable risk table |
+| Create | `src/components/dashboard/RiskBadge.tsx` -- Risk level badge component |
+| Modify | `src/components/layout/DashboardLayout.tsx` -- Add nav item + page title |
+| Modify | `src/App.tsx` -- Add route |
+
+No changes to existing calculation logic, CSV parsers, or data context. All new computation is in a separate `risk-calculations.ts` file.
