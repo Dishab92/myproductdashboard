@@ -7,17 +7,17 @@ import { cn } from "@/lib/utils";
 import type { RoadmapItem } from "./RoadmapCard";
 
 const PRIORITY_COLORS: Record<string, string> = {
-  P0: "bg-red-500/20 text-red-300 border-red-500/30",
-  P1: "bg-orange-500/20 text-orange-300 border-orange-500/30",
-  P2: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+  P0: "bg-red-500/20 text-red-700 dark:text-red-300 border-red-500/30",
+  P1: "bg-orange-500/20 text-orange-700 dark:text-orange-300 border-orange-500/30",
+  P2: "bg-yellow-500/20 text-yellow-700 dark:text-yellow-300 border-yellow-500/30",
   P3: "bg-muted text-muted-foreground border-border",
 };
 
 const STATUS_COLORS: Record<string, string> = {
   Backlog: "bg-muted text-muted-foreground",
-  "In Progress": "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  Beta: "bg-purple-500/20 text-purple-300 border-purple-500/30",
-  Released: "bg-green-500/20 text-green-300 border-green-500/30",
+  "In Progress": "bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30",
+  Beta: "bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-500/30",
+  Released: "bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/30",
 };
 
 type SortKey = "product_type" | "title" | "priority" | "status" | "release_quarter" | "owner";
