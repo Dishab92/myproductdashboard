@@ -1,14 +1,17 @@
 import { useState } from "react";
 import { useData } from "@/context/DataContext";
 import { UploadPanel } from "@/components/dashboard/UploadPanel";
-import { parseEventsCSV, parseCustomersCSV, parseScoresCSV } from "@/lib/csv-parser";
+import { TenantConfigTable } from "@/components/dashboard/TenantConfigTable";
+import { detectAndParseEventsCSV, parseCustomersCSV, parseScoresCSV } from "@/lib/csv-parser";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Database, FileText } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface UploadResult {
   success: boolean;
   message: string;
+  detectedFormat?: string;
 }
 
 export default function DataManagement() {
@@ -18,7 +21,7 @@ export default function DataManagement() {
   const [scoresResult, setScoresResult] = useState<UploadResult | null>(null);
 
   const handleEventsUpload = (text: string) => {
-    const result = parseEventsCSV(text);
+    const result = detectAndParseEventsCSV(text, data.tenantConfig);
     if (result.errors.length > 0 && result.events.length === 0) {
       setEventsResult({ success: false, message: result.errors.join("; ") });
       return;
@@ -26,11 +29,13 @@ export default function DataManagement() {
     setEvents(result.events);
     const uniqueCustomers = new Set(result.events.map(e => e.customer_id)).size;
     const uniqueUsers = new Set(result.events.map(e => e.user_id)).size;
+    const formatLabel = result.detectedFormat === "agent_helper" ? "Agent Helper format detected. " : "";
     setEventsResult({
       success: true,
-      message: `${result.events.length.toLocaleString()} events loaded. ${uniqueCustomers} customers, ${uniqueUsers} users.${
+      message: `${formatLabel}${result.events.length.toLocaleString()} events loaded. ${uniqueCustomers} customers, ${uniqueUsers} users.${
         result.errors.length > 0 ? " " + result.errors.join("; ") : ""
       }`,
+      detectedFormat: result.detectedFormat,
     });
   };
 
@@ -74,6 +79,11 @@ export default function DataManagement() {
         <div className="flex items-center gap-2 mb-4">
           <Database className="w-4 h-4 text-primary" />
           <h3 className="text-sm font-semibold text-card-foreground">Current Dataset</h3>
+          {eventsResult?.detectedFormat && (
+            <Badge variant="secondary" className="text-[10px] h-5">
+              {eventsResult.detectedFormat === "agent_helper" ? "Agent Helper Format" : "Standard Format"}
+            </Badge>
+          )}
         </div>
         <div className="border rounded-lg overflow-hidden">
           <Table>
@@ -107,7 +117,7 @@ export default function DataManagement() {
         </h3>
         <UploadPanel
           title="events.csv (Required)"
-          description="Columns: event_time, customer_id, customer_name, product, user_id, session_id, event_name, feature, case_id (opt), channel (opt), metadata_json (opt)"
+          description="Supports standard format and Agent Helper format (auto-detected). Standard: event_time, customer_id, customer_name, product, user_id, session_id, event_name, feature. Agent Helper: ts, tenant_id, user_id, feature_category, feature_name, interaction_type."
           onUpload={handleEventsUpload}
           result={eventsResult}
         />
@@ -124,6 +134,9 @@ export default function DataManagement() {
           result={scoresResult}
         />
       </div>
+
+      {/* Tenant Configuration */}
+      <TenantConfigTable />
     </div>
   );
 }
