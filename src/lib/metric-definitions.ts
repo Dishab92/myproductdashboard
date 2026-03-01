@@ -168,6 +168,15 @@ export const METRIC_DEFINITIONS: MetricDefinition[] = [
     interpretation: "100% = full retention. Declining curves indicate churn. Compare across cohorts to spot trends.",
     source: "events.csv + customers.csv (go_live_date)",
   },
+  {
+    id: "ai_insights",
+    name: "AI Product Intelligence",
+    category: "health",
+    definition: "Rule-based insights generated from adoption, risk, and cohort data.",
+    formula: "Applies threshold rules across metrics to surface actionable patterns",
+    interpretation: "Insights are prioritized: High risk first, then growth signals, then optimization opportunities.",
+    source: "Derived from adoption scores, risk assessments, and cohort data",
+  },
 ];
 
 export function getMetricDefinition(id: string): MetricDefinition | undefined {
