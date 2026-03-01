@@ -177,7 +177,7 @@ export default function AgentInsights() {
 
       {/* Agent Drilldown */}
       {agentDrilldown && selectedAgent && (
-        <div className="grid grid-cols-2 gap-4 animate-slide-up" style={{ opacity: 0 }}>
+        <div className="grid grid-cols-2 gap-4 animate-slide-up">
           <Card className="p-5">
             <h3 className="text-sm font-semibold text-card-foreground mb-3">
               Module Breakdown – {selectedAgent}

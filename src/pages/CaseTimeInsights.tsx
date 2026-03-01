@@ -153,7 +153,7 @@ export default function CaseTimeInsights() {
               <TableBody>
                 {agentTimes.map(a => (
                   <TableRow key={a.userId} className="border-l-2 border-l-transparent hover:border-l-primary transition-all">
-                    <TableCell className="text-sm font-medium">{a.userId}</TableCell>
+                    <TableCell className="text-sm font-medium">{a.userName}</TableCell>
                     <TableCell className="text-sm text-right tabular-nums">{formatDuration(a.totalEngagedMs)}</TableCell>
                     <TableCell className="text-sm text-right tabular-nums">{formatDuration(a.avgPerCase)}</TableCell>
                     <TableCell className="text-sm text-right tabular-nums">{a.casesTouched}</TableCell>
