@@ -1,13 +1,25 @@
 import { useState } from "react";
-import { useData } from "@/context/DataContext";
+import { useData, DatasetMeta, UploadSummary } from "@/context/DataContext";
 import { UploadPanel } from "@/components/dashboard/UploadPanel";
 import { TenantConfigTable } from "@/components/dashboard/TenantConfigTable";
 import { CustomerMappingDialog } from "@/components/dashboard/CustomerMappingDialog";
 import { detectAndParseEventsCSV, parseCustomersCSV, parseScoresCSV } from "@/lib/csv-parser";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Database, FileText, ShieldCheck } from "lucide-react";
+import { Database, FileText, ShieldCheck, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { EventRecord } from "@/lib/types";
 
 interface UploadResult {
@@ -27,11 +39,15 @@ interface PendingImport {
 }
 
 export default function DataManagement() {
-  const { data, setEvents, setCustomers, setScores, setTenantConfig, hasData } = useData();
+  const { data, appendEvents, replaceEvents, setCustomers, setScores, setTenantConfig, hasData, isLoading } = useData();
   const [eventsResult, setEventsResult] = useState<UploadResult | null>(null);
   const [customersResult, setCustomersResult] = useState<UploadResult | null>(null);
   const [scoresResult, setScoresResult] = useState<UploadResult | null>(null);
   const [pendingImport, setPendingImport] = useState<PendingImport | null>(null);
+  const [uploadMode, setUploadMode] = useState<"append" | "replace">("append");
+  const [showReplaceConfirm, setShowReplaceConfirm] = useState(false);
+  const [pendingMappedImport, setPendingMappedImport] = useState<{ events: EventRecord[]; meta: DatasetMeta } | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const handleEventsUpload = (text: string, fileName?: string) => {
     const result = detectAndParseEventsCSV(text, data.tenantConfig);
@@ -56,7 +72,34 @@ export default function DataManagement() {
     });
   };
 
-  const handleMappingConfirm = (mapping: Record<string, string>) => {
+  const executeUpload = async (events: EventRecord[], meta: DatasetMeta) => {
+    setUploading(true);
+    try {
+      let summary: UploadSummary;
+      if (uploadMode === "replace") {
+        summary = await replaceEvents(events, meta);
+      } else {
+        summary = await appendEvents(events, meta);
+      }
+
+      if (summary.error) {
+        setEventsResult({ success: false, message: summary.error });
+      } else {
+        const modeLabel = uploadMode === "replace" ? "Replaced" : "Appended";
+        setEventsResult({
+          success: true,
+          message: `${modeLabel}: ${summary.inserted.toLocaleString()} new rows inserted, ${summary.duplicatesSkipped.toLocaleString()} duplicates skipped (${summary.processed.toLocaleString()} processed).`,
+          detectedFormat: meta.detectedFormat,
+        });
+      }
+    } catch (err: any) {
+      setEventsResult({ success: false, message: err.message || "Upload failed" });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleMappingConfirm = async (mapping: Record<string, string>) => {
     if (!pendingImport) return;
 
     // Update tenant config with new mappings
@@ -78,19 +121,27 @@ export default function DataManagement() {
       customer_name: mapping[e.customer_id] || e.customer_name,
     }));
 
-    setEvents(mappedEvents);
-
-    const customerNames = Object.values(mapping).join(", ");
-    const formatLabel = pendingImport.detectedFormat === "agent_helper" ? "Agent Helper format detected. " : "";
-    setEventsResult({
-      success: true,
-      message: `${formatLabel}Dataset replaced successfully. ${mappedEvents.length.toLocaleString()} events loaded. Customer: ${customerNames}.${
-        pendingImport.errors.length > 0 ? " " + pendingImport.errors.join("; ") : ""
-      }`,
+    const meta: DatasetMeta = {
+      fileName: pendingImport.fileName,
       detectedFormat: pendingImport.detectedFormat,
-    });
+    };
+
+    if (uploadMode === "replace" && hasData) {
+      setPendingMappedImport({ events: mappedEvents, meta });
+      setShowReplaceConfirm(true);
+    } else {
+      await executeUpload(mappedEvents, meta);
+    }
 
     setPendingImport(null);
+  };
+
+  const handleReplaceConfirm = async () => {
+    setShowReplaceConfirm(false);
+    if (pendingMappedImport) {
+      await executeUpload(pendingMappedImport.events, pendingMappedImport.meta);
+      setPendingMappedImport(null);
+    }
   };
 
   const handleMappingCancel = () => {
@@ -133,8 +184,16 @@ export default function DataManagement() {
     <div className="p-6 space-y-6 max-w-[1000px]">
       <div>
         <h1 className="text-xl font-bold text-foreground">Data Management</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Upload and manage your CSV data</p>
+        <p className="text-sm text-muted-foreground mt-0.5">Upload and manage your CSV data — events persist across sessions</p>
       </div>
+
+      {/* Loading indicator */}
+      {isLoading && (
+        <Card className="p-5 border bg-card flex items-center gap-3">
+          <Loader2 className="w-4 h-4 animate-spin text-primary" />
+          <span className="text-sm text-muted-foreground">Loading persisted events…</span>
+        </Card>
+      )}
 
       {/* Data Integrity Summary */}
       {integrityStats ? (
@@ -157,7 +216,7 @@ export default function DataManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <TableRow><TableCell className="text-sm">Rows Imported</TableCell><TableCell className="text-sm text-right tabular-nums font-medium">{integrityStats.rows.toLocaleString()}</TableCell></TableRow>
+                <TableRow><TableCell className="text-sm">Total Rows (Cumulative)</TableCell><TableCell className="text-sm text-right tabular-nums font-medium">{integrityStats.rows.toLocaleString()}</TableCell></TableRow>
                 <TableRow><TableCell className="text-sm">Unique Customers</TableCell><TableCell className="text-sm text-right tabular-nums font-medium">{integrityStats.customers}</TableCell></TableRow>
                 <TableRow><TableCell className="text-sm">Unique Users</TableCell><TableCell className="text-sm text-right tabular-nums font-medium">{integrityStats.users}</TableCell></TableRow>
                 <TableRow><TableCell className="text-sm">Date Range</TableCell><TableCell className="text-sm text-right tabular-nums font-medium">{integrityStats.dateMin.toISOString().slice(0, 10)} → {integrityStats.dateMax.toISOString().slice(0, 10)}</TableCell></TableRow>
@@ -172,7 +231,7 @@ export default function DataManagement() {
             </p>
           )}
         </Card>
-      ) : (
+      ) : !isLoading ? (
         <Card className="p-5 border bg-card">
           <div className="flex items-center gap-2 mb-2">
             <Database className="w-4 h-4 text-muted-foreground" />
@@ -180,7 +239,28 @@ export default function DataManagement() {
           </div>
           <p className="text-sm text-muted-foreground">No dataset uploaded. Please upload Agent Helper CSV to view analytics.</p>
         </Card>
-      )}
+      ) : null}
+
+      {/* Upload Mode Toggle */}
+      <Card className="p-4 border bg-card">
+        <h3 className="text-sm font-semibold text-card-foreground mb-3">Upload Mode</h3>
+        <RadioGroup value={uploadMode} onValueChange={(v) => setUploadMode(v as "append" | "replace")} className="flex gap-6">
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="append" id="mode-append" />
+            <Label htmlFor="mode-append" className="text-sm cursor-pointer">
+              <span className="font-medium">Append</span>
+              <span className="text-muted-foreground ml-1">(add new rows, skip duplicates)</span>
+            </Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="replace" id="mode-replace" />
+            <Label htmlFor="mode-replace" className="text-sm cursor-pointer">
+              <span className="font-medium">Replace Entire Dataset</span>
+              <span className="text-muted-foreground ml-1">(clear all, insert fresh)</span>
+            </Label>
+          </div>
+        </RadioGroup>
+      </Card>
 
       {/* Upload panels */}
       <div className="space-y-4">
@@ -194,6 +274,12 @@ export default function DataManagement() {
           onUpload={handleEventsUpload}
           result={eventsResult}
         />
+        {uploading && (
+          <Card className="p-4 border bg-card flex items-center gap-3">
+            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+            <span className="text-sm text-muted-foreground">Uploading to database…</span>
+          </Card>
+        )}
         <UploadPanel
           title="customers.csv (Optional)"
           description="Columns: customer_id, customer_name, release, go_live_date, licensed_users, cs_owner"
@@ -224,6 +310,26 @@ export default function DataManagement() {
           onCancel={handleMappingCancel}
         />
       )}
+
+      {/* Replace Confirmation Dialog */}
+      <AlertDialog open={showReplaceConfirm} onOpenChange={setShowReplaceConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Replace Entire Dataset?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete all existing events and replace them with this upload. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setShowReplaceConfirm(false); setPendingMappedImport(null); }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleReplaceConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Replace All Data
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

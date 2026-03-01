@@ -10,6 +10,7 @@ export interface EventRecord {
   case_id?: string;
   channel?: string;
   metadata_json?: string;
+  event_key?: string;
 }
 
 export interface CustomerRecord {

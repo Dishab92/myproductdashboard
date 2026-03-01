@@ -14,6 +14,122 @@ export type Database = {
   }
   public: {
     Tables: {
+      datasets: {
+        Row: {
+          created_at: string
+          date_max: string | null
+          date_min: string | null
+          detected_format: string
+          file_name: string
+          id: string
+          mode: string
+          owner_id: string
+          row_count: number
+        }
+        Insert: {
+          created_at?: string
+          date_max?: string | null
+          date_min?: string | null
+          detected_format?: string
+          file_name: string
+          id?: string
+          mode?: string
+          owner_id: string
+          row_count?: number
+        }
+        Update: {
+          created_at?: string
+          date_max?: string | null
+          date_min?: string | null
+          detected_format?: string
+          file_name?: string
+          id?: string
+          mode?: string
+          owner_id?: string
+          row_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "datasets_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          case_id: string | null
+          channel: string | null
+          created_at: string
+          customer_id: string
+          customer_name: string
+          dataset_id: string | null
+          event_key: string
+          event_name: string
+          event_time: string
+          feature: string
+          id: string
+          metadata_json: string | null
+          owner_id: string
+          product: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          case_id?: string | null
+          channel?: string | null
+          created_at?: string
+          customer_id: string
+          customer_name: string
+          dataset_id?: string | null
+          event_key: string
+          event_name: string
+          event_time: string
+          feature?: string
+          id?: string
+          metadata_json?: string | null
+          owner_id: string
+          product?: string
+          session_id?: string
+          user_id: string
+        }
+        Update: {
+          case_id?: string | null
+          channel?: string | null
+          created_at?: string
+          customer_id?: string
+          customer_name?: string
+          dataset_id?: string | null
+          event_key?: string
+          event_name?: string
+          event_time?: string
+          feature?: string
+          id?: string
+          metadata_json?: string | null
+          owner_id?: string
+          product?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_dataset_id_fkey"
+            columns: ["dataset_id"]
+            isOneToOne: false
+            referencedRelation: "datasets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           approval_token: string
