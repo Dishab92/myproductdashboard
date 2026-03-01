@@ -1,61 +1,159 @@
 
 
-# Fix Code Review Issues: Animations, Performance, and Display Names
+# Upgrade Dataset Management to Persistent Append Mode
 
-Four targeted bug fixes across the codebase.
+Move event storage from in-memory React state to a database table, enabling incremental uploads that persist across sessions, publishes, and logins.
 
 ---
 
-## Fix 1: O(n^2) Sub-feature Lookup in `insights-calculations.ts`
+## Overview
 
-**Problem**: Line 121 does `Array.from(map.entries()).find(...)` inside a `.map()` over `map.entries()` -- this is O(n^2) and also redundant since the key is already available from the outer iteration.
+Currently all CSV data lives in React state and is lost on page refresh. This upgrade:
+- Creates a persistent `events` table and a `datasets` (upload batch) table in the database
+- Changes the default upload behavior to **Append** (with deduplication)
+- Adds an optional **Replace** mode
+- Loads persisted events on app startup
+- Keeps the existing CSV parsing and mapping dialog unchanged
 
-**Fix**: Change the `.map()` to destructure the key directly:
+---
 
-```typescript
-// Before (line 120-121):
-.map(([, v]) => {
-  const parts = Array.from(map.entries()).find(([, val]) => val === v)![0].split("||");
+## 1. Database Tables
 
-// After:
-.map(([key, v]) => {
-  const parts = key.split("||");
+### `events` table
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid (PK, default gen_random_uuid) | Internal row ID |
+| event_key | text (unique) | Dedup key: `ts-userId-eventName` |
+| event_time | timestamptz | |
+| customer_id | text | |
+| customer_name | text | |
+| product | text | "Agent Helper" or "Case QA" |
+| user_id | text | |
+| session_id | text | |
+| event_name | text | |
+| feature | text | Module/feature_category |
+| case_id | text (nullable) | |
+| channel | text (nullable) | |
+| metadata_json | text (nullable) | |
+| dataset_id | uuid (FK to datasets) | Batch reference |
+| owner_id | uuid (FK to profiles.id) | Who uploaded |
+| created_at | timestamptz | |
+
+RLS: Authenticated users can SELECT, INSERT, DELETE their own rows (`owner_id = auth.uid()`).
+
+Index on `event_key` for fast dedup lookups.
+
+### `datasets` table
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid (PK) | |
+| file_name | text | Original CSV filename |
+| detected_format | text | "agent_helper" or "standard" |
+| row_count | integer | Total rows in this batch |
+| date_min | timestamptz | Earliest event in batch |
+| date_max | timestamptz | Latest event in batch |
+| mode | text | "append" or "replace" |
+| owner_id | uuid | |
+| created_at | timestamptz | |
+
+RLS: Authenticated users can SELECT, INSERT, DELETE their own rows.
+
+---
+
+## 2. Upload Flow Changes
+
+### Data Management Page (`DataManagement.tsx`)
+
+Add a toggle/radio before the upload panel:
+
+```
+Upload Mode: [Append (default)] [Replace Entire Dataset]
 ```
 
-Single line change in `src/lib/insights-calculations.ts`.
+**Append mode (default):**
+1. Parse CSV (existing logic)
+2. Show customer mapping dialog (existing)
+3. On confirm: generate `event_key` for each row (`${ts}-${userId}-${eventName}`)
+4. Fetch existing `event_key` values from DB for the upload date range
+5. Filter out duplicates (rows whose key already exists)
+6. Insert new rows into `events` table with a new `dataset_id`
+7. Create a `datasets` record for the batch
+8. Show summary: "X rows processed, Y new rows inserted, Z duplicates skipped"
+9. Reload all events from DB into DataContext
+
+**Replace mode:**
+1. Parse and map (same as above)
+2. Show confirmation warning: "This will permanently delete all existing events and replace with this upload."
+3. On confirm: DELETE all events for this owner, then INSERT new batch
+4. Create dataset record with mode="replace"
+5. Reload from DB
+
+### Event Key Generation
+
+The dedup key is built from the raw CSV values before any transformation, ensuring deterministic matching:
+```
+key = `${tsRaw}-${userId}-${eventName}`
+```
+This matches the existing `seen` Set logic in `csv-parser.ts`.
 
 ---
 
-## Fix 2: Add `userName` to Agent Engaged Time (Case Time Page)
+## 3. DataContext Changes (`DataContext.tsx`)
 
-**Problem**: `AgentEngagedTime` interface lacks a `userName` field. The Case Time page shows raw `userId` instead of friendly names.
+### On Mount: Load from DB
+- Add a `loadEvents()` function that queries `SELECT * FROM events WHERE owner_id = auth.uid() ORDER BY event_time`
+- Call it on mount (after auth is ready)
+- Populate `data.events` and compute `dateRange` from the loaded data
+- Show a loading state while fetching
 
-**Fix**:
-- Add `userName: string` to the `AgentEngagedTime` interface (line 249-254)
-- In `getAgentEngagedTime()`, track the userName from events (same pattern as `getAgentLeaderboard`)
-- In `CaseTimeInsights.tsx` line 156, display `a.userName` instead of `a.userId`
+### New methods:
+- `appendEvents(newEvents, datasetId)` -- inserts into DB, merges into state
+- `replaceEvents(newEvents, datasetId)` -- deletes all, inserts, replaces state
+- `refreshEvents()` -- reloads all from DB (called after any upload)
 
-Changes in `src/lib/insights-calculations.ts` and `src/pages/CaseTimeInsights.tsx`.
-
----
-
-## Fix 3: Agent Drilldown Visibility in AgentInsights.tsx
-
-**Problem**: Line 180 has `style={{ opacity: 0 }}` with `animate-slide-up` but no `animationDelay`. While the animation does have `forwards` fill mode (confirmed in tailwind config), the drilldown appears/disappears dynamically via conditional rendering. When React re-renders with the same `selectedAgent`, the animation may not re-trigger, leaving it invisible.
-
-**Fix**: Remove the inline `opacity: 0` from the drilldown wrapper (line 180) since the `animate-slide-up` class handles both the initial opacity and the final state via `forwards`. The conditional rendering (`{agentDrilldown && selectedAgent && ...}`) already ensures it mounts fresh each time, so the animation will play. But to be safe, also add an `animationDelay` of `0s` to be explicit.
-
-Change in `src/pages/AgentInsights.tsx`.
+### Remove in-memory-only `setEvents`
+Replace with the DB-backed versions above. The signature changes from `setEvents(events)` to the new append/replace methods.
 
 ---
 
-## Fix 4: Snapshot Overflow on KPI Cards (shimmer-border)
+## 4. CSV Parser Updates (`csv-parser.ts`)
 
-**Problem**: The `shimmer-border` class in `index.css` (line 279) sets `overflow: hidden` on cards. This clips any tooltip or popover that tries to render inside the card (like `MetricInfoCard` tooltips on KPI cards in `KPICard.tsx`). The KPICard component already has `overflow-visible` in its className, but the Card component applies `shimmer-border` which forces `overflow: hidden`.
+Add `event_key` generation to the parse result:
+- In `parseAgentHelperFormat`: the existing `key` variable (`${tsRaw}-${userId}-${eventName}`) becomes the `event_key` field on EventRecord
+- In `parseEventsCSV`: same pattern with `${row.event_time}-${row.user_id}-${row.event_name}`
 
-**Fix**: Change `shimmer-border` pseudo-element to use `pointer-events: none` and remove `overflow: hidden` from the base class, replacing it with `overflow: clip` only on the `::after` pseudo-element's container behavior. Alternatively, scope the shimmer to not clip child content by using `overflow: visible` and constraining only the `::after`.
+Add `event_key` to the `EventRecord` type.
 
-Actually, looking more carefully, `KPICard.tsx` already has `overflow-visible` on its outer div which should override. The real issue is the Card inside it also gets `shimmer-border`. This is a minor cosmetic concern -- skip this fix as it's not a functional bug.
+---
+
+## 5. Date Range Recomputation
+
+After any append:
+- Query `SELECT MIN(event_time), MAX(event_time) FROM events WHERE owner_id = auth.uid()`
+- Update `dateRange` in DataContext
+- All filters automatically extend to the new range
+
+---
+
+## 6. Data Integrity Summary Updates
+
+Update the summary panel to show:
+- Total rows (cumulative)
+- Upload history count (number of datasets)
+- Latest upload date and batch size
+- Option to view upload history (list of datasets with date ranges)
+
+---
+
+## 7. Safety Guarantees
+
+- **No automatic deletion**: Append never removes existing data
+- **No duplicates**: `event_key` UNIQUE constraint + client-side filtering
+- **Publish-safe**: Data lives in the database, not in-memory
+- **Replace requires confirmation**: Explicit user action with warning dialog
+- **Batch tracking**: Every upload creates a `datasets` record for audit trail
 
 ---
 
@@ -63,9 +161,11 @@ Actually, looking more carefully, `KPICard.tsx` already has `overflow-visible` o
 
 | Action | File | Change |
 |--------|------|--------|
-| Modify | `src/lib/insights-calculations.ts` | Fix O(n^2) lookup (line 120-121), add userName to AgentEngagedTime |
-| Modify | `src/pages/CaseTimeInsights.tsx` | Display userName instead of userId in agent table |
-| Modify | `src/pages/AgentInsights.tsx` | Fix drilldown opacity for reliable animation |
+| Create | Migration SQL | Create `events` and `datasets` tables with RLS |
+| Modify | `src/lib/types.ts` | Add `event_key` to EventRecord |
+| Modify | `src/lib/csv-parser.ts` | Generate `event_key` during parsing |
+| Modify | `src/context/DataContext.tsx` | Load from DB on mount, add append/replace methods |
+| Modify | `src/pages/DataManagement.tsx` | Add upload mode toggle, DB insert logic, upload history |
 
-Three files, all small targeted edits. No new dependencies.
+No new dependencies. Uses existing Supabase client. Batch inserts use `supabase.from("events").insert()` (chunked for large datasets to stay under payload limits).
 
