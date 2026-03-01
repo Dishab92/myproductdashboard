@@ -2,11 +2,13 @@ import { useState } from "react";
 import { useData } from "@/context/DataContext";
 import { UploadPanel } from "@/components/dashboard/UploadPanel";
 import { TenantConfigTable } from "@/components/dashboard/TenantConfigTable";
+import { CustomerMappingDialog } from "@/components/dashboard/CustomerMappingDialog";
 import { detectAndParseEventsCSV, parseCustomersCSV, parseScoresCSV } from "@/lib/csv-parser";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Database, FileText, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import type { EventRecord } from "@/lib/types";
 
 interface UploadResult {
   success: boolean;
@@ -14,29 +16,86 @@ interface UploadResult {
   detectedFormat?: string;
 }
 
+interface PendingImport {
+  events: EventRecord[];
+  tenantIds: string[];
+  dateMin: Date;
+  dateMax: Date;
+  fileName: string;
+  detectedFormat: string;
+  errors: string[];
+}
+
 export default function DataManagement() {
-  const { data, setEvents, setCustomers, setScores, hasData } = useData();
+  const { data, setEvents, setCustomers, setScores, setTenantConfig, hasData } = useData();
   const [eventsResult, setEventsResult] = useState<UploadResult | null>(null);
   const [customersResult, setCustomersResult] = useState<UploadResult | null>(null);
   const [scoresResult, setScoresResult] = useState<UploadResult | null>(null);
+  const [pendingImport, setPendingImport] = useState<PendingImport | null>(null);
 
-  const handleEventsUpload = (text: string) => {
+  const handleEventsUpload = (text: string, fileName?: string) => {
     const result = detectAndParseEventsCSV(text, data.tenantConfig);
     if (result.errors.length > 0 && result.events.length === 0) {
       setEventsResult({ success: false, message: result.errors.join("; ") });
       return;
     }
-    setEvents(result.events);
-    const uniqueCustomers = new Set(result.events.map(e => e.customer_id)).size;
-    const uniqueUsers = new Set(result.events.map(e => e.user_id)).size;
-    const formatLabel = result.detectedFormat === "agent_helper" ? "Agent Helper format detected. " : "";
+
+    const tenantIds = [...new Set(result.events.map(e => e.customer_id))];
+    const sorted = [...result.events].sort((a, b) => a.event_time.getTime() - b.event_time.getTime());
+    const dateMin = sorted[0].event_time;
+    const dateMax = sorted[sorted.length - 1].event_time;
+
+    setPendingImport({
+      events: result.events,
+      tenantIds,
+      dateMin,
+      dateMax,
+      fileName: fileName || "upload.csv",
+      detectedFormat: result.detectedFormat || "standard",
+      errors: result.errors,
+    });
+  };
+
+  const handleMappingConfirm = (mapping: Record<string, string>) => {
+    if (!pendingImport) return;
+
+    // Update tenant config with new mappings
+    const existingConfig = [...data.tenantConfig];
+    const existingIds = new Set(existingConfig.map(c => c.tenant_id));
+    for (const [tenantId, name] of Object.entries(mapping)) {
+      if (existingIds.has(tenantId)) {
+        const idx = existingConfig.findIndex(c => c.tenant_id === tenantId);
+        existingConfig[idx] = { ...existingConfig[idx], customer_name: name };
+      } else {
+        existingConfig.push({ tenant_id: tenantId, customer_name: name, go_live_date: null, stage: "Active" });
+      }
+    }
+    setTenantConfig(existingConfig);
+
+    // Apply mapping to events
+    const mappedEvents = pendingImport.events.map(e => ({
+      ...e,
+      customer_name: mapping[e.customer_id] || e.customer_name,
+    }));
+
+    setEvents(mappedEvents);
+
+    const customerNames = Object.values(mapping).join(", ");
+    const formatLabel = pendingImport.detectedFormat === "agent_helper" ? "Agent Helper format detected. " : "";
     setEventsResult({
       success: true,
-      message: `${formatLabel}Dataset replaced successfully. ${result.events.length.toLocaleString()} events loaded. ${uniqueCustomers} customers, ${uniqueUsers} users.${
-        result.errors.length > 0 ? " " + result.errors.join("; ") : ""
+      message: `${formatLabel}Dataset replaced successfully. ${mappedEvents.length.toLocaleString()} events loaded. Customer: ${customerNames}.${
+        pendingImport.errors.length > 0 ? " " + pendingImport.errors.join("; ") : ""
       }`,
-      detectedFormat: result.detectedFormat,
+      detectedFormat: pendingImport.detectedFormat,
     });
+
+    setPendingImport(null);
+  };
+
+  const handleMappingCancel = () => {
+    setPendingImport(null);
+    setEventsResult({ success: false, message: "Import cancelled." });
   };
 
   const handleCustomersUpload = (text: string) => {
@@ -59,7 +118,7 @@ export default function DataManagement() {
     setScoresResult({ success: true, message: `${result.scores.length} scores loaded.` });
   };
 
-  // Data Integrity Summary - computed directly from data.events
+  // Data Integrity Summary
   const integrityStats = hasData ? {
     rows: data.events.length,
     customers: new Set(data.events.map(e => e.customer_id)).size,
@@ -151,6 +210,20 @@ export default function DataManagement() {
 
       {/* Tenant Configuration */}
       <TenantConfigTable />
+
+      {/* Customer Mapping Dialog */}
+      {pendingImport && (
+        <CustomerMappingDialog
+          open={!!pendingImport}
+          tenantIds={pendingImport.tenantIds}
+          existingConfig={data.tenantConfig}
+          fileName={pendingImport.fileName}
+          eventCount={pendingImport.events.length}
+          dateRange={{ min: pendingImport.dateMin, max: pendingImport.dateMax }}
+          onConfirm={handleMappingConfirm}
+          onCancel={handleMappingCancel}
+        />
+      )}
     </div>
   );
 }
