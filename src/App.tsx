@@ -15,6 +15,7 @@ import CustomerSnapshot from "./pages/CustomerSnapshot";
 import CustomerDrilldown from "./pages/CustomerDrilldown";
 import ReportsHub from "./pages/ReportsHub";
 import AgentAdoption from "./pages/AgentAdoption";
+import AdoptionHealth from "./pages/AdoptionHealth";
 import DataManagement from "./pages/DataManagement";
 import Login from "./pages/Login";
 import PendingApproval from "./pages/PendingApproval";
@@ -46,6 +47,7 @@ const App = () => (
                               <Route path="/customer" element={<CustomerSnapshot />} />
                               <Route path="/drilldown" element={<CustomerDrilldown />} />
                               <Route path="/agent-adoption" element={<AgentAdoption />} />
+                              <Route path="/adoption-health" element={<AdoptionHealth />} />
                               <Route path="/reports" element={<ReportsHub />} />
                               <Route path="/data" element={<DataManagement />} />
                               <Route path="*" element={<NotFound />} />

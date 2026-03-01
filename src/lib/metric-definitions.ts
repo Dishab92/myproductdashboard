@@ -141,6 +141,33 @@ export const METRIC_DEFINITIONS: MetricDefinition[] = [
     interpretation: "Quick quality tier indicator.",
     source: "scores.csv (grade)",
   },
+  {
+    id: "risk_score",
+    name: "Risk Score",
+    category: "health",
+    definition: "Composite risk score based on 5 weighted rules that detect early signs of churn or disengagement.",
+    formula: "Sum of triggered rule points: No events 14d (+30), Active Users drop >40% WoW (+25), Single module 4 weeks (+20), p95 latency >10s (+15), Trust ratio drop >20% (+10)",
+    interpretation: "0–20 Low, 21–50 Medium, 51+ High. Higher scores require immediate PM/CSM action.",
+    source: "Derived from events.csv + customers.csv",
+  },
+  {
+    id: "cohort_adoption",
+    name: "Cohort Adoption",
+    category: "adoption",
+    definition: "Adoption score tracked by weeks since go-live, grouped by cohort (go-live month).",
+    formula: "Average adoption score per cohort per week_since_go_live (0–12)",
+    interpretation: "Shows how different customer cohorts ramp up over time. Useful for benchmarking onboarding effectiveness.",
+    source: "events.csv + customers.csv (go_live_date)",
+  },
+  {
+    id: "retention_rate",
+    name: "Retention Rate",
+    category: "engagement",
+    definition: "Percentage of active users retained relative to week 0 (first week after go-live).",
+    formula: "active_users_week_N / active_users_week_0 × 100",
+    interpretation: "100% = full retention. Declining curves indicate churn. Compare across cohorts to spot trends.",
+    source: "events.csv + customers.csv (go_live_date)",
+  },
 ];
 
 export function getMetricDefinition(id: string): MetricDefinition | undefined {

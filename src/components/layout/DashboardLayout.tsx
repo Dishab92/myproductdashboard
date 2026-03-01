@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Users, Search, FileBarChart, Database, ChevronRight, UserCheck, Camera
+  LayoutDashboard, Users, Search, FileBarChart, Database, ChevronRight, UserCheck, Camera, ShieldAlert
 } from "lucide-react";
 import { Starfield } from "@/components/effects/Starfield";
 import { EffectsMenu } from "@/components/effects/EffectsMenu";
@@ -19,6 +19,7 @@ const NAV_ITEMS = [
   { path: "/customer", label: "Customer Snapshot", icon: Users },
   { path: "/drilldown", label: "Customer Drilldown", icon: Search },
   { path: "/agent-adoption", label: "Agent Adoption", icon: UserCheck },
+  { path: "/adoption-health", label: "Adoption Health", icon: ShieldAlert },
   { path: "/reports", label: "Reports Hub", icon: FileBarChart },
   { path: "/data", label: "Data Management", icon: Database },
 ];
@@ -28,6 +29,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/customer": "Customer Snapshot",
   "/drilldown": "Customer Drilldown",
   "/agent-adoption": "Agent Adoption",
+  "/adoption-health": "Adoption Health",
   "/reports": "Reports Hub",
   "/data": "Data Management",
 };

@@ -89,3 +89,33 @@ export interface DateRange {
   to: Date;
   label: string;
 }
+
+export interface CohortWeek {
+  week: number;
+  score: number;
+  activeUsersPct: number;
+}
+
+export interface CohortRow {
+  cohortLabel: string;
+  goLiveMonth: string;
+  weeks: CohortWeek[];
+}
+
+export interface RiskTrigger {
+  rule: string;
+  points: number;
+  description: string;
+}
+
+export interface RiskAssessment {
+  customer_id: string;
+  customer_name: string;
+  riskScore: number;
+  riskLevel: "Low" | "Medium" | "High";
+  triggers: RiskTrigger[];
+  momentum: number;
+  health: HealthStatus;
+  adoptionScore: number;
+  suggestedActions: string[];
+}
