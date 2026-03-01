@@ -7,7 +7,7 @@ interface Props {
   title: string;
   description: string;
   accept?: string;
-  onUpload: (text: string) => void;
+  onUpload: (text: string, fileName?: string) => void;
   result?: { success: boolean; message: string } | null;
 }
 
@@ -18,7 +18,7 @@ export function UploadPanel({ title, description, accept = ".csv", onUpload, res
     const file = e.target.files?.[0];
     if (!file) return;
     const text = await file.text();
-    onUpload(text);
+    onUpload(text, file.name);
     if (inputRef.current) inputRef.current.value = "";
   };
 
