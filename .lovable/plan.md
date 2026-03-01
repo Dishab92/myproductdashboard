@@ -1,134 +1,183 @@
 
-# Roadmap Control Center
 
-A new module adding a `roadmap_items` table, a top-level "Roadmap" nav item, and three views (Kanban, Timeline, Table) with Customer Safe mode and deck generation.
+# Agent Helper Roadmap with Weighted Scoring
+
+Extend the existing Roadmap module to add a dedicated Agent Helper sub-page with sheet-like weighted scoring, fixed dropdown values matching your Google Sheets, and three specialized views.
 
 ---
 
-## 1. Database: `roadmap_items` Table
+## 1. Database Changes
 
-Create via migration:
+### Alter `roadmap_items` table
+
+Add new columns to the existing table (no new table needed):
+
+| Column | Type | Default |
+|--------|------|---------|
+| target_bucket | text | 'Future' |
+| sprint | text | '' |
+| jira_link | text | '' |
+| feature_type | text | 'New Feature' |
+| feature_source | text | 'Product' |
+| score_common_customer_ask | integer | 0 |
+| score_competitor_market_research | integer | 0 |
+| score_seller_prospect_input | integer | 0 |
+| score_technical_debt | integer | 0 |
+| score_executive_input | integer | 0 |
+
+The `comments` field already exists as `notes`. The `status` column already exists and will accept the new expanded values. The `priority` column already exists.
+
+### Create `scoring_weights` table
+
+Stores per-user weight configuration:
 
 | Column | Type | Default |
 |--------|------|---------|
 | id | uuid PK | gen_random_uuid() |
-| title | text NOT NULL | |
-| description | text | '' |
-| product_type | text NOT NULL | 'Agent Helper' |
-| category | text NOT NULL | 'Feature' |
-| priority | text NOT NULL | 'P1' |
-| status | text NOT NULL | 'Backlog' |
-| release_quarter | text | |
-| target_date | date (nullable) | |
-| owner | text | '' |
-| customer_visibility | text NOT NULL | 'Internal' |
-| linked_customers | text[] | '{}' |
-| notes | text | '' |
 | owner_id | uuid NOT NULL | |
-| created_at | timestamptz | now() |
-| updated_at | timestamptz | now() |
+| product_type | text | 'Agent Helper' |
+| w_common_customer_ask | integer | 30 |
+| w_competitor_market_research | integer | 30 |
+| w_seller_prospect_input | integer | 15 |
+| w_technical_debt | integer | 15 |
+| w_executive_input | integer | 10 |
 
-RLS: Authenticated users can SELECT, INSERT, UPDATE, DELETE their own rows (`owner_id = auth.uid()`).
-
-Add a trigger to auto-update `updated_at` on row changes.
-
----
-
-## 2. Navigation
-
-Add to `DashboardLayout.tsx`:
-- New nav group **"Roadmap"** with a single item: `{ path: "/roadmap", label: "Roadmap", icon: Map, group: "Roadmap" }`
-- Add to `PAGE_TITLES`
-
-Add route in `App.tsx`: `<Route path="/roadmap" element={<Roadmap />} />`
+RLS: Users manage their own rows. Unique constraint on (owner_id, product_type).
 
 ---
 
-## 3. Roadmap Page (`src/pages/Roadmap.tsx`)
+## 2. Weighted Score Computation
 
-Single page with a **tab bar** at top: `Kanban | Timeline | Table`
+Computed client-side (no DB column needed):
 
-### Shared Controls (above tabs)
-- **Product filter**: All / Agent Helper / Case QA / Escalation Manager
-- **Quarter filter**: dropdown of distinct quarters
-- **Priority filter**: All / P0 / P1 / P2 / P3
-- **Customer Safe toggle**: switch between Internal View and Customer Safe View
-- **"+ Add Item" button**: opens a dialog/sheet to create a new roadmap item
-- **"Generate Deck" button**: exports filtered items as a downloadable PDF
+```
+weightedScore = 
+  (score1/5)*100*(w1/100) + (score2/5)*100*(w2/100) + ... 
+```
 
-### Data Fetching
-- Query `roadmap_items` from the database filtered by `owner_id`
-- Apply client-side filters for product, quarter, priority
-- In Customer Safe mode: hide items where `customer_visibility = 'Internal'`, hide notes column, optionally hide P3
+Result is 0-100. Color coding:
+- 80-100: green badge
+- 50-79: amber badge
+- below 50: red badge
 
----
-
-## 4. Kanban View (`src/components/roadmap/KanbanBoard.tsx`)
-
-Four columns: **Backlog / In Progress / Beta / Released**
-
-Each column shows cards for items matching that status. Cards display:
-- Title, product badge (color-coded), priority badge, quarter
-- Owner name
-- Truncated description
-
-Drag-and-drop to change status (using native HTML drag API to avoid new dependencies). On drop, update the item's `status` in the database.
+Tooltip shows per-dimension contribution breakdown.
 
 ---
 
-## 5. Timeline View (`src/components/roadmap/TimelineView.tsx`)
+## 3. Navigation Update
 
-Horizontal layout grouped by `release_quarter`. Each quarter is a column/section. Within each quarter, items are grouped by product with color-coded headers. Cards show title, priority badge, and short description. Clean executive layout with generous spacing.
+Add a sub-item under the existing "Roadmap" group in the sidebar:
+- `/roadmap` -- existing general Roadmap (Kanban/Timeline/Table for all products)
+- `/roadmap/agent-helper` -- new Agent Helper specific page
 
----
-
-## 6. Table View (`src/components/roadmap/TableView.tsx`)
-
-Sortable table with columns: Product | Title | Priority | Status | Quarter | Owner | Actions (edit/delete). Uses the existing `Table` component. Click a column header to sort.
+Update `DashboardLayout.tsx` NAV_ITEMS and PAGE_TITLES. Add route in `App.tsx`.
 
 ---
 
-## 7. Item CRUD (`src/components/roadmap/RoadmapItemDialog.tsx`)
+## 4. Agent Helper Roadmap Page
 
-A dialog/sheet for creating and editing items. Fields map to the table columns:
-- Title, Description (textarea), Product Type (select), Category (select), Priority (select), Status (select), Release Quarter (input), Target Date (date picker), Owner (input), Customer Visibility (select: Internal/Customer Safe), Linked Customers (multi-input), Notes (textarea)
+New file: `src/pages/AgentHelperRoadmap.tsx`
 
-On save: insert or update via Supabase client. On delete: confirmation dialog, then delete.
+### Toolbar (top)
+- Target Bucket filter dropdown
+- Status filter dropdown (with all 9 exact values)
+- Feature Type filter dropdown
+- Feature Source filter dropdown
+- Priority filter dropdown
+- Customer Safe toggle
+- "Bulk Import" button
+- "+ Add Item" button
+- "Generate Deck" button
 
----
-
-## 8. Deck Generation
-
-"Generate Deck" button triggers client-side PDF generation using the existing `html2canvas` dependency:
-- Render hidden slides grouped by quarter, then by product
-- Each "slide" shows: quarter as title, items with priority badges and descriptions
-- Respects Customer Safe toggle (excludes internal items if active)
-- Download as PDF using a simple canvas-to-PDF approach (will add `jspdf` as a dependency)
-
----
-
-## 9. Customer Safe Mode
-
-A toggle switch in the toolbar:
-- **Internal View**: shows everything
-- **Customer Safe View**: filters out `customer_visibility = 'Internal'` items, hides the notes column, cleaner presentation styling
+### View Switcher (tabs)
+- Weighted Sheet View (default)
+- Table View
+- Timeline View
 
 ---
 
-## Files Summary
+## 5. New Components
 
-| Action | File | Description |
-|--------|------|-------------|
-| Migration | SQL | Create `roadmap_items` table with RLS + updated_at trigger |
-| Modify | `src/App.tsx` | Add `/roadmap` route |
-| Modify | `src/components/layout/DashboardLayout.tsx` | Add Roadmap nav item |
-| Create | `src/pages/Roadmap.tsx` | Main roadmap page with tabs and filters |
-| Create | `src/components/roadmap/KanbanBoard.tsx` | Kanban board view |
-| Create | `src/components/roadmap/TimelineView.tsx` | Timeline view |
-| Create | `src/components/roadmap/TableView.tsx` | Sortable table view |
-| Create | `src/components/roadmap/RoadmapItemDialog.tsx` | Create/edit item dialog |
-| Create | `src/components/roadmap/RoadmapCard.tsx` | Shared card component |
-| Create | `src/components/roadmap/DeckGenerator.tsx` | PDF deck generation logic |
-| Install | `jspdf` | PDF generation dependency |
+### `src/components/roadmap/WeightedSheetView.tsx`
+Sheet-like grid with:
+- Left frozen columns: Title, Status, Feature Type, Feature Source, Priority, Target Bucket, Jira Link
+- Right scrollable columns: 5 score dimensions (each 0-5 dropdown for inline edit), Weighted Score column
+- Default sort: weighted score descending
+- Inline score editing: clicking a score cell shows a small 0-5 dropdown, saves immediately on change
+- Row click opens edit dialog
 
-New dependency: `jspdf` for PDF export. All other UI uses existing shadcn components.
+### `src/components/roadmap/AgentHelperTableView.tsx`
+Table with columns: Status (pill), Feature Type (colored chip), Feature Source (colored chip), Priority (badge), Title, Target Bucket, Sprint, Jira Link, Comments, Weighted Score
+- Inline editing for text fields
+- Status/Type/Source rendered as colored pills/chips
+
+### `src/components/roadmap/AgentHelperTimelineView.tsx`
+Timeline grouped by `target_bucket` (Nov Release, Dec Release, Jan Q1 2026, Feb 2026, March 2026, April 2026, Future).
+Cards show: Title, Priority badge, Status pill, Feature Source chip, Weighted Score badge.
+Click opens detail drawer.
+
+### `src/components/roadmap/WeightScoreBadge.tsx`
+Colored badge (green/amber/red) with tooltip showing score breakdown per dimension.
+
+### `src/components/roadmap/BulkImportDialog.tsx`
+Dialog with:
+- CSV paste area or file upload
+- Maps columns: title, status, feature_type, feature_source, priority, target_bucket, jira_link, comments, and 5 score fields
+- Missing scores default to 0
+- Shows preview table before import
+- Inserts into `roadmap_items` with product_type = "Agent Helper"
+
+### `src/components/roadmap/WeightConfigDialog.tsx`
+Settings dialog for editing the 5 weights. Enforces total = 100 (blocks save otherwise). Loads/saves from `scoring_weights` table.
+
+### Update `src/components/roadmap/RoadmapItemDialog.tsx`
+Add the new fields: target_bucket dropdown, feature_type dropdown, feature_source dropdown, sprint, jira_link, and 5 score sliders (0-5). Show these fields when product_type is "Agent Helper".
+
+### Update `src/components/roadmap/RoadmapCard.tsx`
+Add `RoadmapItem` interface fields for the new columns (target_bucket, sprint, jira_link, feature_type, feature_source, score fields).
+
+---
+
+## 6. Fixed Dropdown Values
+
+These exact strings will be used as constants:
+
+**STATUS**: Complete, In Development, In QA, To Do, Grooming to be planned, In Story writing, On Hold, To be planned for dev, In Review
+
+**FEATURE TYPE**: New Feature, UX Improvement, Analytics and Reporting, Enhancement/Optimization, Relevance, Technical Debt
+
+**FEATURE SOURCE**: Product, Customer Request, CSM, Sales, Executive, Technical Debt
+
+**PRIORITY**: P0, P1, P2, P3
+
+**TARGET BUCKET**: Nov Release, Dec Release, Jan Q1 2026, Feb 2026, March 2026, April 2026, Future
+
+---
+
+## 7. Customer Safe Mode
+
+When toggled ON:
+- Filter to only `customer_visibility = "Customer Safe"` items
+- Hide comments/notes column
+- Hide Feature Source = "Technical Debt" items (optional, controlled by a sub-toggle)
+- Clean presentation layout suitable for screenshots
+
+---
+
+## 8. Files Summary
+
+| Action | File |
+|--------|------|
+| Migration | SQL: ALTER roadmap_items + CREATE scoring_weights |
+| Create | `src/pages/AgentHelperRoadmap.tsx` |
+| Create | `src/components/roadmap/WeightedSheetView.tsx` |
+| Create | `src/components/roadmap/AgentHelperTableView.tsx` |
+| Create | `src/components/roadmap/AgentHelperTimelineView.tsx` |
+| Create | `src/components/roadmap/WeightScoreBadge.tsx` |
+| Create | `src/components/roadmap/BulkImportDialog.tsx` |
+| Create | `src/components/roadmap/WeightConfigDialog.tsx` |
+| Modify | `src/components/roadmap/RoadmapCard.tsx` (extend interface) |
+| Modify | `src/components/roadmap/RoadmapItemDialog.tsx` (add AH fields) |
+| Modify | `src/components/layout/DashboardLayout.tsx` (add nav item) |
+| Modify | `src/App.tsx` (add route) |
+
