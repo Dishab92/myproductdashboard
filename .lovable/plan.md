@@ -1,183 +1,113 @@
 
 
-# Agent Helper Roadmap with Weighted Scoring
+# Seed Agent Helper Roadmap Items from Google Sheets
 
-Extend the existing Roadmap module to add a dedicated Agent Helper sub-page with sheet-like weighted scoring, fixed dropdown values matching your Google Sheets, and three specialized views.
-
----
-
-## 1. Database Changes
-
-### Alter `roadmap_items` table
-
-Add new columns to the existing table (no new table needed):
-
-| Column | Type | Default |
-|--------|------|---------|
-| target_bucket | text | 'Future' |
-| sprint | text | '' |
-| jira_link | text | '' |
-| feature_type | text | 'New Feature' |
-| feature_source | text | 'Product' |
-| score_common_customer_ask | integer | 0 |
-| score_competitor_market_research | integer | 0 |
-| score_seller_prospect_input | integer | 0 |
-| score_technical_debt | integer | 0 |
-| score_executive_input | integer | 0 |
-
-The `comments` field already exists as `notes`. The `status` column already exists and will accept the new expanded values. The `priority` column already exists.
-
-### Create `scoring_weights` table
-
-Stores per-user weight configuration:
-
-| Column | Type | Default |
-|--------|------|---------|
-| id | uuid PK | gen_random_uuid() |
-| owner_id | uuid NOT NULL | |
-| product_type | text | 'Agent Helper' |
-| w_common_customer_ask | integer | 30 |
-| w_competitor_market_research | integer | 30 |
-| w_seller_prospect_input | integer | 15 |
-| w_technical_debt | integer | 15 |
-| w_executive_input | integer | 10 |
-
-RLS: Users manage their own rows. Unique constraint on (owner_id, product_type).
+Insert all ~60 roadmap items visible in the uploaded screenshots into the `roadmap_items` table via a database migration.
 
 ---
 
-## 2. Weighted Score Computation
+## Data Extracted from Screenshots
 
-Computed client-side (no DB column needed):
+The two images show the same dataset from different column perspectives:
+- **IMG_6858**: Title (col A), Status (col B), Feature Type (col C), Feature Source (col D)
+- **IMG_6859**: Status (col B), Feature Type (col C), Feature Source (col D), Priority (col E), Comments (col F)
 
+## Approach
+
+Run a single SQL migration that inserts all items. Since RLS requires an `owner_id`, the migration will use a database function approach -- inserting with a placeholder owner_id that will be updated on first login, OR we insert them as service-role bypassing RLS (migrations run as superuser so RLS is bypassed).
+
+### Key mapping decisions:
+- `product_type` = 'Agent Helper' for all rows
+- `customer_visibility` = 'Internal' (default)
+- All score fields default to 0 (no scoring data in the sheets)
+- `target_bucket` = 'Future' (no bucket data visible in the sheets)
+- Comments from column F map to `notes`
+
+### Items to insert (~60 rows including):
+
+| # | Title | Status | Feature Type | Feature Source | Priority | Comments |
+|---|-------|--------|-------------|----------------|----------|----------|
+| 1 | Jira Integration (Zendesk and Salesforce) | Complete | New Feature | Product | P0 | |
+| 2 | Case Escalation Rate - Zendesk | Complete | Analytics & Reporting | Product | P1 | |
+| 3 | Remove Train button and status button and add created date and time button | Complete | UX Improvement | Product | P2 | |
+| 4 | Agent Helper Overview Tab - Analytics | Complete | Analytics & Reporting | Product | P1 | |
+| 5 | Preserve RA - Zendesk | Complete | New Feature | Product | P1 | |
+| 6 | Multilingual Support - Zendesk | Complete | New Feature | Product | P0 | |
+| 7 | Response assist Adoption Metrics (Zendesk) | Complete | Analytics & Reporting | Product | P0 | |
+| 8 | Response assist Adoption Metrics (Salesforce) | Complete | Analytics & Reporting | Product | P0 | |
+| 9 | Case timeline Enhancement (Customer Feedback) | Complete | UX Improvement | Product | P0 | |
+| 10 | Case Summary UI updates (Rubrik POC improvement) | Complete | UI Improvement | Product | P2 | |
+| 11 | Front End Enhancement Report | Complete | Analytics & Reporting | Product | P2 | |
+| 12 | Integration of Individual Slack in Top Experts (Zendesk) | Complete | Enhancement/Optimization | Product | P0 | |
+| 13 | Comprehensive RA adoption Tracking with ClickC | Complete | Enhancement/Optimization | Product | P1 | |
+| 14 | All Open in new tab (Zendesk) | Complete | New Feature | CSM | P1 | |
+| 15 | Top Reports (Customer Request, Rubrik) | Complete | Analytics & Reporting | Product | P0 | |
+| 16 | Agent wise Adoption Metrics | Complete | Analytics & Reporting | Product | P0 | |
+| 17 | Mean Time To Resolution | Complete | Analytics & Reporting | Product | P0 | |
+| 18 | Discontinue "Disabled" Case Summary in AH | Complete | Enhancement/Optimization | CSM | P1 | |
+| 19 | Display Case Resolution in Top Related Cases With LLM and add agents name to the case | Complete | New Feature | Product | P1 | |
+| 20 | Implement Multi Query Search Execution Using Rephrased Queries with Aggregation Support (TD) | In Development | Relevance | Product | P1 | |
+| 21 | Implement LLM Based Filtering to Identify Search Results That Can Solve the Case (TD) | In Development | Relevance | CSM | P1 | |
+| 22 | Dual Response Generation (TD) | In Development | Enhancement | Product | P1 | |
+| 23 | Direct Comment To Salesforce | Complete | New Feature | Product | P1 | |
+| 24 | Live Customer Sentiment | Complete | New Feature | Product | P1 | |
+| 25 | Zendesk Alt: Flexible Case Summary View (Resizable & Switchable Position) (Customer Feedback - Jabra) | Complete | UX Improvement | Customer Request | P1 | |
+| 26 | Minimal Feedback Popup with Auto-Detected Reasons | Complete | UX Improvement | Product | P1 | |
+| 27 | Top Related Articles: Enriched List + Source Filter + Attach to Case | In Development | New Feature | Product | P1 | |
+| 28 | Dynamic Loader with Contextual Narration | Complete | Analytics & Reporting | Product | P0 | |
+| 29 | Agent assigned through recommendations should be notified through slack, email and salesforce alert that new case has been assigned | To be planned for dev | New Feature | Product | P2 | |
+| 30 | Add case status in case timeline | In Story writing | Enhancement/Optimization | Product | P0 | |
+| 31 | License Management | In Development | New Feature | Product | P0 | |
+| 32 | Query Rephraser Enhancement | Grooming to be planned | Enhancement/Optimization | Product | P0 | |
+| 33 | ROI Impact Report (approach) | In Development | New Feature | Customer Request | P0 | |
+| 34 | ROI Impact report Benchmark Settings | Grooming to be planned | New Feature | Customer Request | P0 | |
+| 35 | Manually select/de-select ticket ID (Standalone AH) | With Design | Enhancement/Optimization | CSM | P1 | |
+| 36 | AI Assistant in Standard | In Development | New Feature | Product | P1 | |
+| 37 | Custom Time COnfiguration (Org wide) | Grooming to be planned | New Feature | Product | P1 | |
+| 38 | Feedback Analysis Enhancement | Grooming to be planned | Analytics & Reporting | Product | P1 | |
+| 39 | Nerfs to admin regarding LLM errors | Grooming to be planned | New Feature | Product | P0 | Admin side |
+| 40 | Intelligent Searching in Slack and Case Timeline Integration | Grooming to be planned | New Feature | CSM | P1 | |
+| 41 | Ability to create a Jira Ticket Within in AH | Grooming to be planned | New Feature | Product | P1 | |
+| 42 | Zendesk Stand alone app - Improvements (Similar to what we did for accela) | Grooming to be planned | New Feature | Product | P2 | |
+| 43 | Deploy Feedback icon in Top Related Cases Top Related Articles and Top Experts (Rubrik) | On Hold | New Feature | Product | P1 | |
+| 44 | Key Moments Auto-Detection in Case Timeline | In Story writing | New Feature | Product | P1 | |
+| 45 | Confidence Score & Redirection to Experts | In Story writing | New Feature | Product | P1 | As discussed with Vishal Sir |
+| 46 | Prompt Editor | In Story writing | New Feature | Product | P1 | As discussed with Vishal Sir |
+| 47 | Exact Time Spent Tracking in Agent Helper | In Story writing | Enhancement/Optimization | Product | P1 | |
+| 48 | Multi-modality feature (voice, image, etc.) | To Do | New Feature | CSM | P3 | |
+| 49 | Case QA | Engineering Review | New Feature | CSM | P1 | |
+| 50 | Case summary with Detailed Next Steps | In Story writing | New Feature | CSM | P1 | |
+| 51 | Google Call Transcript Integration | In Story writing | New Feature | Customer Request | P0 | Once command alkon is signed- can be given to PS to build customizations |
+| 52 | Voice Transcript Setup Admin | In Story writing | New Feature | Customer Request | P1 | |
+| 53 | Remove salutations from the response generated - think about it | In Story writing | New Feature | Customer Request | P0 | Once command alkon is signed- can be given to PS to build customizations |
+| 54 | Selected features working for netsuite | To Do | | | | |
+| 55 | Response and case summary automatically regenerate as the case progresses | To Do | | | | |
+| 56 | Add a toggle button to switch to AI | In QA | Enhancement/Optimization | Product | P0 | |
+| 57 | Deterministic Ranking for Top Experts Based on Similar Cases Solved | Grooming to be planned | Enhancement/Optimization | CSM | P0 | |
+| 58 | Hide recommendation from AI editor | Grooming to be planned | Enhancement/Optimization | Product | P3 | |
+| 59 | When unable to find a response redirected to top experts tab | | Enhancement/Optimization | Product | | |
+
+---
+
+## Implementation
+
+1. **Single SQL migration** inserting all ~59 rows into `roadmap_items`
+   - Since migrations run as superuser (bypasses RLS), we need a valid `owner_id`
+   - We'll query the first user from `profiles` table to use as owner, or use a subquery
+   - All scores default to 0, target_bucket defaults to 'Future'
+
+2. **No code changes needed** -- the existing Agent Helper Roadmap page will automatically display these items once inserted
+
+---
+
+## Technical Details
+
+The migration will use:
+```sql
+INSERT INTO public.roadmap_items (title, status, feature_type, feature_source, priority, notes, product_type, owner_id)
+SELECT 'Title', 'Status', 'Type', 'Source', 'P1', 'comment', 'Agent Helper', id
+FROM public.profiles LIMIT 1;
 ```
-weightedScore = 
-  (score1/5)*100*(w1/100) + (score2/5)*100*(w2/100) + ... 
-```
 
-Result is 0-100. Color coding:
-- 80-100: green badge
-- 50-79: amber badge
-- below 50: red badge
-
-Tooltip shows per-dimension contribution breakdown.
-
----
-
-## 3. Navigation Update
-
-Add a sub-item under the existing "Roadmap" group in the sidebar:
-- `/roadmap` -- existing general Roadmap (Kanban/Timeline/Table for all products)
-- `/roadmap/agent-helper` -- new Agent Helper specific page
-
-Update `DashboardLayout.tsx` NAV_ITEMS and PAGE_TITLES. Add route in `App.tsx`.
-
----
-
-## 4. Agent Helper Roadmap Page
-
-New file: `src/pages/AgentHelperRoadmap.tsx`
-
-### Toolbar (top)
-- Target Bucket filter dropdown
-- Status filter dropdown (with all 9 exact values)
-- Feature Type filter dropdown
-- Feature Source filter dropdown
-- Priority filter dropdown
-- Customer Safe toggle
-- "Bulk Import" button
-- "+ Add Item" button
-- "Generate Deck" button
-
-### View Switcher (tabs)
-- Weighted Sheet View (default)
-- Table View
-- Timeline View
-
----
-
-## 5. New Components
-
-### `src/components/roadmap/WeightedSheetView.tsx`
-Sheet-like grid with:
-- Left frozen columns: Title, Status, Feature Type, Feature Source, Priority, Target Bucket, Jira Link
-- Right scrollable columns: 5 score dimensions (each 0-5 dropdown for inline edit), Weighted Score column
-- Default sort: weighted score descending
-- Inline score editing: clicking a score cell shows a small 0-5 dropdown, saves immediately on change
-- Row click opens edit dialog
-
-### `src/components/roadmap/AgentHelperTableView.tsx`
-Table with columns: Status (pill), Feature Type (colored chip), Feature Source (colored chip), Priority (badge), Title, Target Bucket, Sprint, Jira Link, Comments, Weighted Score
-- Inline editing for text fields
-- Status/Type/Source rendered as colored pills/chips
-
-### `src/components/roadmap/AgentHelperTimelineView.tsx`
-Timeline grouped by `target_bucket` (Nov Release, Dec Release, Jan Q1 2026, Feb 2026, March 2026, April 2026, Future).
-Cards show: Title, Priority badge, Status pill, Feature Source chip, Weighted Score badge.
-Click opens detail drawer.
-
-### `src/components/roadmap/WeightScoreBadge.tsx`
-Colored badge (green/amber/red) with tooltip showing score breakdown per dimension.
-
-### `src/components/roadmap/BulkImportDialog.tsx`
-Dialog with:
-- CSV paste area or file upload
-- Maps columns: title, status, feature_type, feature_source, priority, target_bucket, jira_link, comments, and 5 score fields
-- Missing scores default to 0
-- Shows preview table before import
-- Inserts into `roadmap_items` with product_type = "Agent Helper"
-
-### `src/components/roadmap/WeightConfigDialog.tsx`
-Settings dialog for editing the 5 weights. Enforces total = 100 (blocks save otherwise). Loads/saves from `scoring_weights` table.
-
-### Update `src/components/roadmap/RoadmapItemDialog.tsx`
-Add the new fields: target_bucket dropdown, feature_type dropdown, feature_source dropdown, sprint, jira_link, and 5 score sliders (0-5). Show these fields when product_type is "Agent Helper".
-
-### Update `src/components/roadmap/RoadmapCard.tsx`
-Add `RoadmapItem` interface fields for the new columns (target_bucket, sprint, jira_link, feature_type, feature_source, score fields).
-
----
-
-## 6. Fixed Dropdown Values
-
-These exact strings will be used as constants:
-
-**STATUS**: Complete, In Development, In QA, To Do, Grooming to be planned, In Story writing, On Hold, To be planned for dev, In Review
-
-**FEATURE TYPE**: New Feature, UX Improvement, Analytics and Reporting, Enhancement/Optimization, Relevance, Technical Debt
-
-**FEATURE SOURCE**: Product, Customer Request, CSM, Sales, Executive, Technical Debt
-
-**PRIORITY**: P0, P1, P2, P3
-
-**TARGET BUCKET**: Nov Release, Dec Release, Jan Q1 2026, Feb 2026, March 2026, April 2026, Future
-
----
-
-## 7. Customer Safe Mode
-
-When toggled ON:
-- Filter to only `customer_visibility = "Customer Safe"` items
-- Hide comments/notes column
-- Hide Feature Source = "Technical Debt" items (optional, controlled by a sub-toggle)
-- Clean presentation layout suitable for screenshots
-
----
-
-## 8. Files Summary
-
-| Action | File |
-|--------|------|
-| Migration | SQL: ALTER roadmap_items + CREATE scoring_weights |
-| Create | `src/pages/AgentHelperRoadmap.tsx` |
-| Create | `src/components/roadmap/WeightedSheetView.tsx` |
-| Create | `src/components/roadmap/AgentHelperTableView.tsx` |
-| Create | `src/components/roadmap/AgentHelperTimelineView.tsx` |
-| Create | `src/components/roadmap/WeightScoreBadge.tsx` |
-| Create | `src/components/roadmap/BulkImportDialog.tsx` |
-| Create | `src/components/roadmap/WeightConfigDialog.tsx` |
-| Modify | `src/components/roadmap/RoadmapCard.tsx` (extend interface) |
-| Modify | `src/components/roadmap/RoadmapItemDialog.tsx` (add AH fields) |
-| Modify | `src/components/layout/DashboardLayout.tsx` (add nav item) |
-| Modify | `src/App.tsx` (add route) |
+This pattern repeats for all ~59 rows, using a CTE to get the owner_id once.
 
