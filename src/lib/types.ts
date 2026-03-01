@@ -76,11 +76,19 @@ export interface AgentAdoptionRecord {
   customerName: string;
 }
 
+export interface TenantConfig {
+  tenant_id: string;
+  customer_name: string;
+  go_live_date: Date | null;
+  stage: string;
+}
+
 export interface AppData {
   events: EventRecord[];
   customers: CustomerRecord[];
   scores: ScoreRecord[];
   agentAdoption: AgentAdoptionRecord[];
+  tenantConfig: TenantConfig[];
   lastUpload: Date | null;
 }
 

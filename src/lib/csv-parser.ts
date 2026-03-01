@@ -1,4 +1,4 @@
-import { EventRecord, CustomerRecord, ScoreRecord, AgentAdoptionRecord } from "./types";
+import { EventRecord, CustomerRecord, ScoreRecord, AgentAdoptionRecord, TenantConfig } from "./types";
 
 function parseCSVLine(line: string): string[] {
   const result: string[] = [];
@@ -29,6 +29,107 @@ function parseCSV(text: string): Record<string, string>[] {
     headers.forEach((h, i) => { row[h] = vals[i] || ""; });
     return row;
   });
+}
+
+function normalizeInteractionType(type: string): string {
+  const lower = type.toLowerCase().trim();
+  if (lower === "click") return "user_action";
+  if (lower === "page view" || lower === "pageview") return "page_view";
+  if (lower === "response_time") return "system_latency";
+  return lower;
+}
+
+function buildMetadataJson(row: Record<string, string>): string | undefined {
+  const meta: Record<string, unknown> = {};
+  if (row.uid) meta.client_uid = row.uid;
+  if (row.feature_name) meta.sub_feature = row.feature_name;
+  if (row.metric) {
+    try {
+      const parsed = JSON.parse(row.metric);
+      if (parsed.response_time != null) meta.response_time_ms = parseInt(parsed.response_time);
+      if (parsed.api_status != null) meta.api_status = parseInt(parsed.api_status);
+    } catch {
+      // metric not JSON, store raw
+      meta.metric_raw = row.metric;
+    }
+  }
+  return Object.keys(meta).length > 0 ? JSON.stringify(meta) : undefined;
+}
+
+function isAgentHelperFormat(headers: string[]): boolean {
+  const required = ["feature_category", "feature_name", "interaction_type", "tenant_id"];
+  return required.every(h => headers.includes(h));
+}
+
+export interface DetectedParseResult {
+  events: EventRecord[];
+  errors: string[];
+  total: number;
+  detectedFormat: "agent_helper" | "standard";
+}
+
+export function detectAndParseEventsCSV(text: string, tenantConfig?: TenantConfig[]): DetectedParseResult {
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) return { events: [], errors: ["Empty file"], total: 0, detectedFormat: "standard" };
+
+  const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase().replace(/\s+/g, "_"));
+
+  if (isAgentHelperFormat(headers)) {
+    return parseAgentHelperFormat(text, headers, tenantConfig);
+  }
+
+  const std = parseEventsCSV(text);
+  return { ...std, detectedFormat: "standard" };
+}
+
+function parseAgentHelperFormat(text: string, _headers: string[], tenantConfig?: TenantConfig[]): DetectedParseResult {
+  const rows = parseCSV(text);
+  const errors: string[] = [];
+  const seen = new Set<string>();
+  const events: EventRecord[] = [];
+  let invalidDates = 0;
+
+  const configMap = new Map<string, TenantConfig>();
+  tenantConfig?.forEach(c => configMap.set(c.tenant_id, c));
+
+  for (const row of rows) {
+    const dt = new Date(row.ts);
+    if (isNaN(dt.getTime())) { invalidDates++; continue; }
+
+    const tenantId = row.tenant_id || "";
+    const userId = row.user_id || "";
+    const featureCategory = row.feature_category || "";
+    const featureName = row.feature_name || "";
+    const interactionType = normalizeInteractionType(row.interaction_type || "");
+
+    const eventName = `${interactionType}:${featureCategory}:${featureName}`;
+    const dateStr = dt.toISOString().slice(0, 10).replace(/-/g, "");
+    const sessionId = `${userId}-${dateStr}`;
+
+    const key = `${row.ts}-${userId}-${eventName}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const config = configMap.get(tenantId);
+    const customerName = config?.customer_name || tenantId;
+
+    events.push({
+      event_time: dt,
+      customer_id: tenantId,
+      customer_name: customerName,
+      product: "Agent Helper",
+      user_id: userId,
+      session_id: sessionId,
+      event_name: eventName,
+      feature: featureCategory,
+      case_id: row.case_number || undefined,
+      metadata_json: buildMetadataJson(row),
+    });
+  }
+
+  if (invalidDates > 0) errors.push(`${invalidDates} rows with unparseable timestamps skipped`);
+
+  return { events, errors, total: rows.length, detectedFormat: "agent_helper" };
 }
 
 export function parseEventsCSV(text: string): { events: EventRecord[]; errors: string[]; total: number } {
