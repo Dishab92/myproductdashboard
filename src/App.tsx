@@ -23,6 +23,7 @@ import DataManagement from "./pages/DataManagement";
 import Login from "./pages/Login";
 import PendingApproval from "./pages/PendingApproval";
 import NotFound from "./pages/NotFound";
+import Roadmap from "./pages/Roadmap";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +57,7 @@ const App = () => (
                               <Route path="/insights/cases" element={<CaseTimeInsights />} />
                               <Route path="/reports" element={<ReportsHub />} />
                               <Route path="/data" element={<DataManagement />} />
+                              <Route path="/roadmap" element={<Roadmap />} />
                               <Route path="*" element={<NotFound />} />
                             </Routes>
                           </DashboardLayout>

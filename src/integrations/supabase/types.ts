@@ -160,6 +160,63 @@ export type Database = {
         }
         Relationships: []
       }
+      roadmap_items: {
+        Row: {
+          category: string
+          created_at: string
+          customer_visibility: string
+          description: string
+          id: string
+          linked_customers: string[]
+          notes: string
+          owner: string
+          owner_id: string
+          priority: string
+          product_type: string
+          release_quarter: string | null
+          status: string
+          target_date: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          customer_visibility?: string
+          description?: string
+          id?: string
+          linked_customers?: string[]
+          notes?: string
+          owner?: string
+          owner_id: string
+          priority?: string
+          product_type?: string
+          release_quarter?: string | null
+          status?: string
+          target_date?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          customer_visibility?: string
+          description?: string
+          id?: string
+          linked_customers?: string[]
+          notes?: string
+          owner?: string
+          owner_id?: string
+          priority?: string
+          product_type?: string
+          release_quarter?: string | null
+          status?: string
+          target_date?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
