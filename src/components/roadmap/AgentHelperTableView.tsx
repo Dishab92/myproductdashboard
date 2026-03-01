@@ -10,9 +10,9 @@ import { WeightScoreBadge } from "./WeightScoreBadge";
 import type { RoadmapItem } from "./RoadmapCard";
 
 const PRIORITY_COLORS: Record<string, string> = {
-  P0: "bg-red-500/20 text-red-300 border-red-500/30",
-  P1: "bg-orange-500/20 text-orange-300 border-orange-500/30",
-  P2: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+  P0: "bg-red-500/20 text-red-700 dark:text-red-300 border-red-500/30",
+  P1: "bg-orange-500/20 text-orange-700 dark:text-orange-300 border-orange-500/30",
+  P2: "bg-yellow-500/20 text-yellow-700 dark:text-yellow-300 border-yellow-500/30",
   P3: "bg-muted text-muted-foreground border-border",
 };
 
@@ -52,10 +52,10 @@ export function AgentHelperTableView({ items, weights, onEdit, onDelete, custome
         <tbody>
           {scored.map((item) => (
             <tr key={item.id} className="border-t border-border/50 hover:bg-muted/30 transition-colors">
-              <td className="px-3 py-2"><Badge className={cn("text-[10px]", STATUS_COLORS[(item as any).status] || "")}>{(item as any).status}</Badge></td>
-              <td className="px-2 py-2"><Badge className={cn("text-[10px]", FEATURE_TYPE_COLORS[(item as any).feature_type] || "")}>{(item as any).feature_type}</Badge></td>
-              <td className="px-2 py-2"><Badge className={cn("text-[10px]", FEATURE_SOURCE_COLORS[(item as any).feature_source] || "")}>{(item as any).feature_source}</Badge></td>
-              <td className="px-2 py-2 text-center"><Badge className={cn("text-[10px]", PRIORITY_COLORS[item.priority] || "")}>{item.priority}</Badge></td>
+              <td className="px-3 py-2"><Badge className={cn("text-[10px] whitespace-nowrap", STATUS_COLORS[(item as any).status] || "")}>{(item as any).status}</Badge></td>
+              <td className="px-2 py-2"><Badge className={cn("text-[10px] whitespace-nowrap", FEATURE_TYPE_COLORS[(item as any).feature_type] || "")}>{(item as any).feature_type}</Badge></td>
+              <td className="px-2 py-2"><Badge className={cn("text-[10px] whitespace-nowrap", FEATURE_SOURCE_COLORS[(item as any).feature_source] || "")}>{(item as any).feature_source}</Badge></td>
+              <td className="px-2 py-2 text-center"><Badge className={cn("text-[10px] whitespace-nowrap", PRIORITY_COLORS[item.priority] || "")}>{item.priority}</Badge></td>
               <td className="px-3 py-2 font-medium text-foreground">{item.title}</td>
               <td className="px-2 py-2 text-muted-foreground">{(item as any).target_bucket}</td>
               <td className="px-2 py-2 text-muted-foreground">{(item as any).sprint || "—"}</td>
