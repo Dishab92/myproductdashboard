@@ -1,164 +1,91 @@
 
-# Adoption Health Page: Cohort Analysis + Risk Engine
 
-A new "Adoption Health" page added to the sidebar with two major sections: Cohort Analysis (heatmap + retention curve) and a Risk Engine (scored leaderboard with breakdown panel and suggested actions). Fully Snapshot Mode compatible.
+# AI Insight Summary + Personalized Greeting
 
----
-
-## 1. New Types (`src/lib/types.ts`)
-
-Add these interfaces:
-
-- `CohortRow` -- `{ cohortLabel: string; goLiveMonth: string; weeks: { week: number; score: number; activeUsersPct: number }[] }`
-- `RiskAssessment` -- `{ customer_id: string; customer_name: string; riskScore: number; riskLevel: "Low" | "Medium" | "High"; triggers: RiskTrigger[]; momentum: number; health: HealthStatus; adoptionScore: number; suggestedActions: string[] }`
-- `RiskTrigger` -- `{ rule: string; points: number; description: string }`
+Add a personalized greeting header and a rule-based AI Insight Engine to the Portfolio Overview page, generating 3-5 concise insights from existing metrics.
 
 ---
 
-## 2. Risk & Cohort Calculations (`src/lib/risk-calculations.ts`)
+## 1. Create Insight Engine (`src/lib/insight-engine.ts`)
 
-New file with pure calculation functions:
+Pure function `generateInsights(metrics, riskAssessments, cohortData)` that applies rules against the existing computed data:
 
-### `computeCohortData(events, customers, dateRange)`
-- Groups customers by `go_live_month` (formatted from `go_live_date`)
-- For each customer, computes `week_since_go_live = floor((event_date - go_live_date) / 7)` for weeks 0-12
-- Aggregates adoption score per cohort per week
-- Returns `CohortRow[]` for the heatmap
-- Computes active users % (vs week 0 baseline) for the retention curve
+| Rule | Priority | Trigger |
+|------|----------|---------|
+| Risk score > 50 for any customer | High | Risk narrative (prioritized first) |
+| Adoption increase > 15% WoW (any customer) | Growth | Growth insight |
+| Active users drop > 30% WoW | High | Risk narrative |
+| Only 1 module used consistently (single_module trigger) | Optimization | Breadth limitation |
+| Cohort plateau after Week 2 | Optimization | Onboarding insight |
 
-### `computeRiskAssessments(events, customers, customerMetrics, dateRange)`
-Applies 5 risk rules per customer:
+Each insight is an object:
+```text
+{
+  id: string
+  title: string
+  explanation: string (1-2 sentences)
+  confidence: "High" | "Medium" | "Low"
+  priority: "high" | "growth" | "optimization"
+  details: { label, value }[] (expandable metric details)
+}
+```
 
-| Rule | Points | Detection |
-|------|--------|-----------|
-| No events 14 days | +30 | Check `lastActivity` vs now |
-| Active Users drop >40% WoW | +25 | Compare current vs prior week distinct users |
-| Only 1 module used for 4 weeks | +20 | Check distinct `product` values over trailing 4 weeks |
-| p95 latency >10000ms | +15 | Parse `metadata_json` for response_time (if present) |
-| Trust ratio drops >20% | +10 | Compare thumbs_up/(thumbs_up+thumbs_down) WoW |
-
-- Risk Score = sum of triggered rule points
-- Risk Level: 0-20 Low, 21-50 Medium, 51+ High
-- Each trigger maps to a suggested PM/CSM action
-
-### `getRiskSuggestedActions(triggers)`
-Maps each trigger to actionable text:
-- No events 14d -> "Schedule urgent check-in with CS owner"
-- Active Users drop -> "Investigate onboarding gaps and run re-engagement campaign"
-- Single module -> "Demo additional modules; create feature adoption plan"
-- High latency -> "Escalate to engineering; review API performance"
-- Trust ratio drop -> "Review AI response quality; analyze thumbs-down patterns"
+The function returns 3-5 insights, ordered: high priority first, then growth, then optimization. Deduplicates and caps at 5.
 
 ---
 
-## 3. Metric Definitions (`src/lib/metric-definitions.ts`)
+## 2. Create Greeting Component (`src/components/dashboard/GreetingHeader.tsx`)
 
-Add new entries:
-- `risk_score` -- "Composite risk score based on 5 weighted rules..."
-- `cohort_adoption` -- "Adoption score tracked by weeks since go-live..."
-- `retention_rate` -- "Percentage of active users retained vs week 0..."
-
----
-
-## 4. New Page (`src/pages/AdoptionHealth.tsx`)
-
-Layout (top to bottom):
-
-### Header
-- Title: "Adoption Health"
-- Subtitle: "Cohort analysis and risk detection"
-- FilterBar (hidden in snapshot if `!options.includeFilters`)
-
-### Section A: Cohort Analysis (two cards side by side)
-
-**Cohort Heatmap** (left card, ~60% width)
-- Rows = cohort groups (by go_live_month, e.g. "Mar 2024", "Jun 2024")
-- Columns = weeks 0-12 since go-live
-- Cell value = average adoption score for that cohort at that week
-- Color scale: green (>=70) / yellow (40-69) / red (<40)
-- Built as a custom HTML table with colored cells (no heavy chart lib needed)
-- `MetricInfoCard` for `cohort_adoption`
-
-**Retention Curve** (right card, ~40% width)
-- Recharts `LineChart`
-- X-axis: week_since_go_live (0-12)
-- Y-axis: Active Users % (relative to week 0)
-- One line per cohort, color-coded
-- Legend with cohort labels
-- `MetricInfoCard` for `retention_rate`
-
-### Section B: Risk Engine
-
-**Risk KPI Cards** (3 cards)
-- High Risk Customers (count, red)
-- Medium Risk Customers (count, amber)
-- Average Risk Score (number)
-
-**Risk Leaderboard** (full-width table)
-- Columns: Customer | Risk Score | Risk Level | Primary Trigger | Momentum | Health Badge
-- Sorted by risk score descending
-- Clicking a row expands an inline panel (using Collapsible) showing:
-  - Risk Breakdown: each triggered rule with points and description
-  - Suggested Actions: bullet list of recommended PM/CSM actions
-  - Trigger severity bar (visual indicator)
-- Color-coded risk level badges (similar to HealthBadge)
-
-### Snapshot Mode Support
-- All `MetricInfoCard` components pin definitions when snapshot is active
-- Risk breakdown panels auto-expand for all High-risk customers
-- Upload/filter elements hidden per snapshot options
+- Displays "Hi Disha! Hope you're having a great day."
+- Below: one rotating motivational line from the 5 provided, selected randomly on mount (using `useMemo` with empty deps)
+- Clean, minimal styling: large greeting text with `text-gradient-cyan`, smaller motivational text in `text-muted-foreground`
+- Includes timestamp: "Last updated: [date]"
 
 ---
 
-## 5. New Components
+## 3. Create Insight Panel Component (`src/components/dashboard/InsightPanel.tsx`)
 
-### `src/components/dashboard/CohortHeatmap.tsx`
-- Renders an HTML table grid
-- Props: `data: CohortRow[]`
-- Cells colored with inline styles based on score thresholds
-- Tooltip on hover showing exact score value
-
-### `src/components/dashboard/RetentionChart.tsx`
-- Recharts LineChart wrapper
-- Props: `data: CohortRow[]`
-- One line per cohort with distinct colors
-
-### `src/components/dashboard/RiskLeaderboard.tsx`
-- Table with expandable rows (uses Radix Collapsible)
-- Props: `assessments: RiskAssessment[]`
-- Inline risk breakdown panel
-- Suggested actions list
-
-### `src/components/dashboard/RiskBadge.tsx`
-- Similar to HealthBadge but for risk levels
-- Low (green), Medium (amber), High (red with glow)
+- Renders the list of insights as cards inside a section titled "Product Intelligence"
+- Each insight card shows:
+  - Priority icon (AlertTriangle for high, TrendingUp for growth, Lightbulb for optimization)
+  - Confidence badge (pill label: High/Medium/Low)
+  - Title (bold)
+  - 1-2 sentence explanation
+  - Expand button (Collapsible) to reveal metric detail rows
+- Uses existing glass card styling (`glass-strong`, `border-glow-cyan`)
+- Snapshot Mode: all insight cards auto-expand when `isSnapshotMode` is true, timestamp visible
 
 ---
 
-## 6. Navigation Updates
+## 4. Update Portfolio Overview Page (`src/pages/Index.tsx`)
 
-### `src/components/layout/DashboardLayout.tsx`
-- Add nav item: `{ path: "/adoption-health", label: "Adoption Health", icon: ShieldAlert }`
-- Add page title mapping
-
-### `src/App.tsx`
-- Add route: `<Route path="/adoption-health" element={<AdoptionHealth />} />`
+- Import and render `GreetingHeader` at the top (before the existing page title)
+- Compute `riskAssessments` using existing `computeRiskAssessments` (already available in risk-calculations.ts)
+- Compute `cohortData` using existing `computeCohortData`
+- Call `generateInsights(metrics, riskAssessments, cohortData)` via `useMemo`
+- Render `InsightPanel` between the greeting and the KPI cards section
+- In Snapshot Mode, insights are included (always visible)
 
 ---
 
-## Summary of All Files
+## 5. Add Metric Definitions (`src/lib/metric-definitions.ts`)
+
+Add entry for `ai_insights`:
+- Name: "AI Product Intelligence"
+- Definition: "Rule-based insights generated from adoption, risk, and cohort data"
+- Formula: "Applies threshold rules across metrics to surface actionable patterns"
+
+---
+
+## Files
 
 | Action | File |
 |--------|------|
-| Modify | `src/lib/types.ts` -- Add CohortRow, RiskAssessment, RiskTrigger interfaces |
-| Create | `src/lib/risk-calculations.ts` -- Cohort + risk computation functions |
-| Modify | `src/lib/metric-definitions.ts` -- Add risk_score, cohort_adoption, retention_rate definitions |
-| Create | `src/pages/AdoptionHealth.tsx` -- Main page with cohort + risk sections |
-| Create | `src/components/dashboard/CohortHeatmap.tsx` -- Heatmap table component |
-| Create | `src/components/dashboard/RetentionChart.tsx` -- Recharts retention curve |
-| Create | `src/components/dashboard/RiskLeaderboard.tsx` -- Expandable risk table |
-| Create | `src/components/dashboard/RiskBadge.tsx` -- Risk level badge component |
-| Modify | `src/components/layout/DashboardLayout.tsx` -- Add nav item + page title |
-| Modify | `src/App.tsx` -- Add route |
+| Create | `src/lib/insight-engine.ts` |
+| Create | `src/components/dashboard/GreetingHeader.tsx` |
+| Create | `src/components/dashboard/InsightPanel.tsx` |
+| Modify | `src/pages/Index.tsx` |
+| Modify | `src/lib/metric-definitions.ts` |
 
-No changes to existing calculation logic, CSV parsers, or data context. All new computation is in a separate `risk-calculations.ts` file.
+No new dependencies. Uses existing risk-calculations, cohort data, and Collapsible component.
+
