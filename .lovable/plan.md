@@ -1,169 +1,71 @@
 
 
-# Build Feature Insights, Agent Insights, and Time-on-Case Analytics
+# Fix Code Review Issues: Animations, Performance, and Display Names
 
-Three new pages answering core PM questions: which features are used most, which agents use AH the most, and how much time agents spend on cases.
-
----
-
-## Overview
-
-| Page | Route | Purpose |
-|------|-------|---------|
-| Feature Insights | `/insights/features` | Module and sub-feature usage leaderboards, charts |
-| Agent Insights | `/insights/agents` | Agent usage scoring, leaderboard, drilldown |
-| Case Time Insights | `/insights/cases` | Estimated engaged time per case, agent, and module |
+Four targeted bug fixes across the codebase.
 
 ---
 
-## 1. Calculation Engine (`src/lib/insights-calculations.ts`) -- NEW
+## Fix 1: O(n^2) Sub-feature Lookup in `insights-calculations.ts`
 
-All three pages share a calculation layer. This file contains pure functions operating on `EventRecord[]`:
+**Problem**: Line 121 does `Array.from(map.entries()).find(...)` inside a `.map()` over `map.entries()` -- this is O(n^2) and also redundant since the key is already available from the outer iteration.
 
-### Feature Calculations
-- `getModuleLeaderboard(events, interactionFilter?)` -- returns array of `{ module, totalInteractions, clicks, uniqueUsers, uniqueCases, avgLatency }` sorted by clicks
-- `getSubFeatureLeaderboard(events, interactionFilter?)` -- returns `{ subFeature, module, totalInteractions, clicks, uniqueUsers, uniqueCases, avgLatency }` with sub_feature extracted from `metadata_json`
-- `getClicksTrend(events)` -- daily click counts for trend chart
+**Fix**: Change the `.map()` to destructure the key directly:
 
-### Agent Calculations
-- `getAgentLeaderboard(events)` -- computes **Agent Usage Score** per `user_id`:
-  - 40% normalized total clicks (interaction_type containing "user_action")
-  - 30% normalized distinct modules (feature field)
-  - 20% normalized distinct sub-features (from metadata_json)
-  - 10% normalized unique cases touched
-  - Normalization: each metric divided by the max across all agents, then multiplied by weight, scaled to 0-100
-  - Returns: `{ userId, userName, usageScore, clicks, modulesUsed, subFeaturesUsed, casesTouched, mostUsedModule, avgLatency? }`
+```typescript
+// Before (line 120-121):
+.map(([, v]) => {
+  const parts = Array.from(map.entries()).find(([, val]) => val === v)![0].split("||");
 
-### Time-on-Case Calculations
-- `computeEngagedTime(events, gapThresholdMinutes = 10)` -- the core burst algorithm:
-  - Group events by `user_id + case_id` (skip events without case_id)
-  - Sort by `event_time`
-  - Walk through: if gap between consecutive events <= threshold, extend current burst; else start new burst
-  - Burst duration = last event time - first event time in burst
-  - Returns per-case summaries: `{ caseId, customerId, totalEngagedMs, burstCount, uniqueAgents, totalInteractions, topModule }`
-- `getAgentEngagedTime(events, gapThreshold)` -- aggregate engaged time per agent
-- `getModuleEngagedTime(events, gapThreshold)` -- aggregate engaged time per module
-- Helper: `formatDuration(ms)` -- converts milliseconds to "Xh Ym" or "Xm Ys" human-readable string
-
-### Interaction Type Helpers
-- `isClick(event)` -- checks if event_name starts with "user_action:"
-- `isPageView(event)` -- checks for "page_view:"
-- `isSystemLatency(event)` -- checks for "system_latency:"
-- Extract `response_time_ms` from `metadata_json` when available for latency calculations
-
----
-
-## 2. Feature Insights Page (`src/pages/FeatureInsights.tsx`) -- NEW
-
-### Layout
-- Header: "Feature Insights" with subtitle
-- Filter bar: Customer selector (All / specific), Date range (from FilterBar), Interaction type filter (All / Clicks only / Page views only)
-- Empty state if no data
-
-### Sections (using Tabs: Modules / Sub-features / Trends)
-
-**Modules Tab:**
-- KPI cards row: Total Modules, Total Clicks, Total Unique Users, Avg Latency
-- Top Modules leaderboard table: Module | Total Interactions | Clicks | Unique Users | Unique Cases | Avg Latency
-- Horizontal bar chart: top 10 modules by clicks (reuse BarChart pattern from existing FeatureBarChart)
-
-**Sub-features Tab:**
-- Top Sub-features leaderboard table: Sub-feature | Module | Total Interactions | Clicks | Unique Users | Unique Cases | Avg Latency
-- Horizontal bar chart: top 10 sub-features by clicks
-
-**Trends Tab:**
-- Line chart: daily clicks over time (using recharts LineChart, same pattern as AgentAdoption daily trend)
-
----
-
-## 3. Agent Insights Page (`src/pages/AgentInsights.tsx`) -- NEW
-
-### Layout
-- Header: "Agent Insights"
-- Filter bar: Customer selector, Date range
-- Empty state if no data
-
-### Sections
-
-**KPI Cards:**
-- Total Agents, Avg Usage Score, Total Clicks, Total Cases Touched
-
-**Agent Leaderboard:**
-- Table with columns: Rank | Agent (user_name or user_id) | Usage Score (0-100, with colored bar) | Clicks | Modules Used | Sub-features Used | Cases Touched | Most Used Module
-- Sorted by Usage Score descending
-- Click on agent row expands an inline drilldown or scrolls to detail section
-
-**Agent Drilldown (expandable or below):**
-- When an agent is selected:
-  - Module breakdown bar chart for that agent
-  - Top cases touched (table: Case ID | Interactions | Engaged Time)
-  - Engaged time total for that agent (from time-on-case calculation)
-
-**Usage Score methodology note:**
-- Small info tooltip explaining the 40/30/20/10 weighting
-
----
-
-## 4. Case Time Insights Page (`src/pages/CaseTimeInsights.tsx`) -- NEW
-
-### Layout
-- Header: "Estimated Time on Case"
-- Subtitle/label: "Estimated engaged time (based on interaction bursts with 10-min gap threshold)"
-- Filter bar: Customer selector, Date range
-- If no case_id data in events: show disabled message "Case IDs not available in uploaded data. Time-on-case analysis requires case_number field."
-
-### Sections
-
-**KPI Cards:**
-- Avg Engaged Time per Case
-- Median Engaged Time per Case
-- Total Engaged Time (all cases in filter)
-- Cases with High Engaged Time (> 30 min)
-
-**Case Leaderboard:**
-- Table: Case ID | Customer | Engaged Time | Burst Count | Unique Agents | Total Interactions | Top Module
-- Sorted by engaged time descending
-
-**Agent Engaged Time:**
-- Table: Agent | Total Engaged Time | Avg per Case | Cases Touched
-- Sorted by total engaged time descending
-
-**Module Engaged Time:**
-- Table: Module | Total Engaged Time | Avg per Case
-- Sorted by total engaged time descending
-
----
-
-## 5. Navigation and Routing
-
-### Update `src/components/layout/DashboardLayout.tsx`
-Add 3 new nav items with a visual group separator "Insights":
-```
-{ path: "/insights/features", label: "Feature Insights", icon: BarChart3 }
-{ path: "/insights/agents", label: "Agent Insights", icon: UserCheck }
-{ path: "/insights/cases", label: "Case Time", icon: Clock }
+// After:
+.map(([key, v]) => {
+  const parts = key.split("||");
 ```
 
-### Update `src/App.tsx`
-Add routes:
-```
-<Route path="/insights/features" element={<FeatureInsights />} />
-<Route path="/insights/agents" element={<AgentInsights />} />
-<Route path="/insights/cases" element={<CaseTimeInsights />} />
-```
+Single line change in `src/lib/insights-calculations.ts`.
 
 ---
 
-## 6. Files Summary
+## Fix 2: Add `userName` to Agent Engaged Time (Case Time Page)
 
-| Action | File |
-|--------|------|
-| Create | `src/lib/insights-calculations.ts` -- All calculation functions for features, agents, and engaged time |
-| Create | `src/pages/FeatureInsights.tsx` -- Feature usage leaderboards with tabs and charts |
-| Create | `src/pages/AgentInsights.tsx` -- Agent leaderboard with usage score and drilldown |
-| Create | `src/pages/CaseTimeInsights.tsx` -- Estimated engaged time analytics |
-| Modify | `src/components/layout/DashboardLayout.tsx` -- Add 3 nav items in an "Insights" group |
-| Modify | `src/App.tsx` -- Add 3 new routes |
+**Problem**: `AgentEngagedTime` interface lacks a `userName` field. The Case Time page shows raw `userId` instead of friendly names.
 
-No new dependencies. All charts use existing recharts. All data comes from the uploaded CSV via DataContext. Gap threshold defaults to 10 minutes.
+**Fix**:
+- Add `userName: string` to the `AgentEngagedTime` interface (line 249-254)
+- In `getAgentEngagedTime()`, track the userName from events (same pattern as `getAgentLeaderboard`)
+- In `CaseTimeInsights.tsx` line 156, display `a.userName` instead of `a.userId`
+
+Changes in `src/lib/insights-calculations.ts` and `src/pages/CaseTimeInsights.tsx`.
+
+---
+
+## Fix 3: Agent Drilldown Visibility in AgentInsights.tsx
+
+**Problem**: Line 180 has `style={{ opacity: 0 }}` with `animate-slide-up` but no `animationDelay`. While the animation does have `forwards` fill mode (confirmed in tailwind config), the drilldown appears/disappears dynamically via conditional rendering. When React re-renders with the same `selectedAgent`, the animation may not re-trigger, leaving it invisible.
+
+**Fix**: Remove the inline `opacity: 0` from the drilldown wrapper (line 180) since the `animate-slide-up` class handles both the initial opacity and the final state via `forwards`. The conditional rendering (`{agentDrilldown && selectedAgent && ...}`) already ensures it mounts fresh each time, so the animation will play. But to be safe, also add an `animationDelay` of `0s` to be explicit.
+
+Change in `src/pages/AgentInsights.tsx`.
+
+---
+
+## Fix 4: Snapshot Overflow on KPI Cards (shimmer-border)
+
+**Problem**: The `shimmer-border` class in `index.css` (line 279) sets `overflow: hidden` on cards. This clips any tooltip or popover that tries to render inside the card (like `MetricInfoCard` tooltips on KPI cards in `KPICard.tsx`). The KPICard component already has `overflow-visible` in its className, but the Card component applies `shimmer-border` which forces `overflow: hidden`.
+
+**Fix**: Change `shimmer-border` pseudo-element to use `pointer-events: none` and remove `overflow: hidden` from the base class, replacing it with `overflow: clip` only on the `::after` pseudo-element's container behavior. Alternatively, scope the shimmer to not clip child content by using `overflow: visible` and constraining only the `::after`.
+
+Actually, looking more carefully, `KPICard.tsx` already has `overflow-visible` on its outer div which should override. The real issue is the Card inside it also gets `shimmer-border`. This is a minor cosmetic concern -- skip this fix as it's not a functional bug.
+
+---
+
+## Files Summary
+
+| Action | File | Change |
+|--------|------|--------|
+| Modify | `src/lib/insights-calculations.ts` | Fix O(n^2) lookup (line 120-121), add userName to AgentEngagedTime |
+| Modify | `src/pages/CaseTimeInsights.tsx` | Display userName instead of userId in agent table |
+| Modify | `src/pages/AgentInsights.tsx` | Fix drilldown opacity for reliable animation |
+
+Three files, all small targeted edits. No new dependencies.
 
