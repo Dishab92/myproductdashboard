@@ -166,7 +166,10 @@ export type Database = {
           created_at: string
           customer_visibility: string
           description: string
+          feature_source: string
+          feature_type: string
           id: string
+          jira_link: string
           linked_customers: string[]
           notes: string
           owner: string
@@ -174,7 +177,14 @@ export type Database = {
           priority: string
           product_type: string
           release_quarter: string | null
+          score_common_customer_ask: number
+          score_competitor_market_research: number
+          score_executive_input: number
+          score_seller_prospect_input: number
+          score_technical_debt: number
+          sprint: string
           status: string
+          target_bucket: string
           target_date: string | null
           title: string
           updated_at: string
@@ -184,7 +194,10 @@ export type Database = {
           created_at?: string
           customer_visibility?: string
           description?: string
+          feature_source?: string
+          feature_type?: string
           id?: string
+          jira_link?: string
           linked_customers?: string[]
           notes?: string
           owner?: string
@@ -192,7 +205,14 @@ export type Database = {
           priority?: string
           product_type?: string
           release_quarter?: string | null
+          score_common_customer_ask?: number
+          score_competitor_market_research?: number
+          score_executive_input?: number
+          score_seller_prospect_input?: number
+          score_technical_debt?: number
+          sprint?: string
           status?: string
+          target_bucket?: string
           target_date?: string | null
           title: string
           updated_at?: string
@@ -202,7 +222,10 @@ export type Database = {
           created_at?: string
           customer_visibility?: string
           description?: string
+          feature_source?: string
+          feature_type?: string
           id?: string
+          jira_link?: string
           linked_customers?: string[]
           notes?: string
           owner?: string
@@ -210,10 +233,50 @@ export type Database = {
           priority?: string
           product_type?: string
           release_quarter?: string | null
+          score_common_customer_ask?: number
+          score_competitor_market_research?: number
+          score_executive_input?: number
+          score_seller_prospect_input?: number
+          score_technical_debt?: number
+          sprint?: string
           status?: string
+          target_bucket?: string
           target_date?: string | null
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      scoring_weights: {
+        Row: {
+          id: string
+          owner_id: string
+          product_type: string
+          w_common_customer_ask: number
+          w_competitor_market_research: number
+          w_executive_input: number
+          w_seller_prospect_input: number
+          w_technical_debt: number
+        }
+        Insert: {
+          id?: string
+          owner_id: string
+          product_type?: string
+          w_common_customer_ask?: number
+          w_competitor_market_research?: number
+          w_executive_input?: number
+          w_seller_prospect_input?: number
+          w_technical_debt?: number
+        }
+        Update: {
+          id?: string
+          owner_id?: string
+          product_type?: string
+          w_common_customer_ask?: number
+          w_competitor_market_research?: number
+          w_executive_input?: number
+          w_seller_prospect_input?: number
+          w_technical_debt?: number
         }
         Relationships: []
       }

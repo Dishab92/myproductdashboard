@@ -5,8 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  AH_STATUSES, AH_FEATURE_TYPES, AH_FEATURE_SOURCES, AH_PRIORITIES, AH_TARGET_BUCKETS,
+  SCORE_DIMENSIONS,
+} from "@/lib/agent-helper-constants";
 import type { RoadmapItem } from "./RoadmapCard";
 
 const PRODUCTS = ["Agent Helper", "Case QA", "Escalation Manager"];
@@ -20,55 +25,74 @@ interface RoadmapItemDialogProps {
   onOpenChange: (open: boolean) => void;
   item?: RoadmapItem | null;
   onSaved: () => void;
+  agentHelperMode?: boolean;
 }
 
-export function RoadmapItemDialog({ open, onOpenChange, item, onSaved }: RoadmapItemDialogProps) {
+export function RoadmapItemDialog({ open, onOpenChange, item, onSaved, agentHelperMode }: RoadmapItemDialogProps) {
   const [form, setForm] = useState({
     title: "", description: "", product_type: "Agent Helper", category: "Feature",
-    priority: "P1", status: "Backlog", release_quarter: "", target_date: "",
-    owner: "", customer_visibility: "Internal", linked_customers: "",  notes: "",
+    priority: "P1", status: agentHelperMode ? "To Do" : "Backlog",
+    release_quarter: "", target_date: "",
+    owner: "", customer_visibility: "Internal", linked_customers: "", notes: "",
+    // Agent Helper fields
+    target_bucket: "Future", sprint: "", jira_link: "",
+    feature_type: "New Feature", feature_source: "Product",
+    score_common_customer_ask: 0, score_competitor_market_research: 0,
+    score_seller_prospect_input: 0, score_technical_debt: 0, score_executive_input: 0,
   });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (item) {
+      const a = item as any;
       setForm({
         title: item.title, description: item.description, product_type: item.product_type,
         category: item.category, priority: item.priority, status: item.status,
         release_quarter: item.release_quarter || "", target_date: item.target_date || "",
         owner: item.owner, customer_visibility: item.customer_visibility,
         linked_customers: item.linked_customers.join(", "), notes: item.notes,
+        target_bucket: a.target_bucket || "Future", sprint: a.sprint || "",
+        jira_link: a.jira_link || "", feature_type: a.feature_type || "New Feature",
+        feature_source: a.feature_source || "Product",
+        score_common_customer_ask: a.score_common_customer_ask || 0,
+        score_competitor_market_research: a.score_competitor_market_research || 0,
+        score_seller_prospect_input: a.score_seller_prospect_input || 0,
+        score_technical_debt: a.score_technical_debt || 0,
+        score_executive_input: a.score_executive_input || 0,
       });
     } else {
       setForm({
-        title: "", description: "", product_type: "Agent Helper", category: "Feature",
-        priority: "P1", status: "Backlog", release_quarter: "", target_date: "",
-        owner: "", customer_visibility: "Internal", linked_customers: "", notes: "",
+        title: "", description: "", product_type: agentHelperMode ? "Agent Helper" : "Agent Helper",
+        category: "Feature", priority: "P1", status: agentHelperMode ? "To Do" : "Backlog",
+        release_quarter: "", target_date: "", owner: "", customer_visibility: "Internal",
+        linked_customers: "", notes: "", target_bucket: "Future", sprint: "", jira_link: "",
+        feature_type: "New Feature", feature_source: "Product",
+        score_common_customer_ask: 0, score_competitor_market_research: 0,
+        score_seller_prospect_input: 0, score_technical_debt: 0, score_executive_input: 0,
       });
     }
-  }, [item, open]);
+  }, [item, open, agentHelperMode]);
 
   const handleSave = async () => {
     if (!form.title.trim()) { toast.error("Title is required"); return; }
     setSaving(true);
-
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { toast.error("Not authenticated"); setSaving(false); return; }
 
-    const payload = {
-      title: form.title.trim(),
-      description: form.description,
-      product_type: form.product_type,
-      category: form.category,
-      priority: form.priority,
-      status: form.status,
-      release_quarter: form.release_quarter || null,
-      target_date: form.target_date || null,
-      owner: form.owner,
-      customer_visibility: form.customer_visibility,
+    const payload: any = {
+      title: form.title.trim(), description: form.description, product_type: form.product_type,
+      category: form.category, priority: form.priority, status: form.status,
+      release_quarter: form.release_quarter || null, target_date: form.target_date || null,
+      owner: form.owner, customer_visibility: form.customer_visibility,
       linked_customers: form.linked_customers.split(",").map((s) => s.trim()).filter(Boolean),
-      notes: form.notes,
-      owner_id: user.id,
+      notes: form.notes, owner_id: user.id,
+      target_bucket: form.target_bucket, sprint: form.sprint, jira_link: form.jira_link,
+      feature_type: form.feature_type, feature_source: form.feature_source,
+      score_common_customer_ask: form.score_common_customer_ask,
+      score_competitor_market_research: form.score_competitor_market_research,
+      score_seller_prospect_input: form.score_seller_prospect_input,
+      score_technical_debt: form.score_technical_debt,
+      score_executive_input: form.score_executive_input,
     };
 
     let error;
@@ -77,7 +101,6 @@ export function RoadmapItemDialog({ open, onOpenChange, item, onSaved }: Roadmap
     } else {
       ({ error } = await (supabase.from("roadmap_items") as any).insert(payload));
     }
-
     setSaving(false);
     if (error) { toast.error(error.message); return; }
     toast.success(item ? "Item updated" : "Item created");
@@ -85,13 +108,16 @@ export function RoadmapItemDialog({ open, onOpenChange, item, onSaved }: Roadmap
     onSaved();
   };
 
-  const set = (key: string, val: string) => setForm((f) => ({ ...f, [key]: val }));
+  const set = (key: string, val: any) => setForm((f) => ({ ...f, [key]: val }));
+
+  const statusOptions = agentHelperMode ? AH_STATUSES : STATUSES;
+  const priorityOptions = agentHelperMode ? AH_PRIORITIES : PRIORITIES;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{item ? "Edit Roadmap Item" : "New Roadmap Item"}</DialogTitle>
+          <DialogTitle>{item ? "Edit Item" : "New Item"}{agentHelperMode ? " — Agent Helper" : ""}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-3 py-2">
           <div>
@@ -102,38 +128,97 @@ export function RoadmapItemDialog({ open, onOpenChange, item, onSaved }: Roadmap
             <Label className="text-xs">Description</Label>
             <Textarea value={form.description} onChange={(e) => set("description", e.target.value)} rows={2} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs">Product</Label>
-              <Select value={form.product_type} onValueChange={(v) => set("product_type", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{PRODUCTS.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-xs">Category</Label>
-              <Select value={form.category} onValueChange={(v) => set("category", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Priority</Label>
               <Select value={form.priority} onValueChange={(v) => set("priority", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{PRIORITIES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                <SelectContent>{priorityOptions.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div>
               <Label className="text-xs">Status</Label>
               <Select value={form.status} onValueChange={(v) => set("status", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                <SelectContent>{statusOptions.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
               </Select>
             </div>
           </div>
+
+          {agentHelperMode && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Feature Type</Label>
+                  <Select value={form.feature_type} onValueChange={(v) => set("feature_type", v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{AH_FEATURE_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Feature Source</Label>
+                  <Select value={form.feature_source} onValueChange={(v) => set("feature_source", v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{AH_FEATURE_SOURCES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Target Bucket</Label>
+                  <Select value={form.target_bucket} onValueChange={(v) => set("target_bucket", v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{AH_TARGET_BUCKETS.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Sprint</Label>
+                  <Input value={form.sprint} onChange={(e) => set("sprint", e.target.value)} placeholder="Sprint name" />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs">Jira Link</Label>
+                <Input value={form.jira_link} onChange={(e) => set("jira_link", e.target.value)} placeholder="https://jira.example.com/..." />
+              </div>
+
+              <div className="space-y-3 pt-2 border-t border-border">
+                <Label className="text-xs font-semibold">Scoring (0–5)</Label>
+                {SCORE_DIMENSIONS.map((d) => (
+                  <div key={d.key} className="flex items-center gap-3">
+                    <Label className="text-[11px] w-32 shrink-0">{d.shortLabel}</Label>
+                    <Slider
+                      value={[(form as any)[d.key]]}
+                      onValueChange={([v]) => set(d.key, v)}
+                      min={0} max={5} step={1}
+                      className="flex-1"
+                    />
+                    <span className="text-xs font-mono w-4 text-right">{(form as any)[d.key]}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {!agentHelperMode && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Product</Label>
+                <Select value={form.product_type} onValueChange={(v) => set("product_type", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{PRODUCTS.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Category</Label>
+                <Select value={form.category} onValueChange={(v) => set("category", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Release Quarter</Label>
@@ -154,10 +239,6 @@ export function RoadmapItemDialog({ open, onOpenChange, item, onSaved }: Roadmap
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>{VISIBILITY.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
             </Select>
-          </div>
-          <div>
-            <Label className="text-xs">Linked Customers (comma-separated)</Label>
-            <Input value={form.linked_customers} onChange={(e) => set("linked_customers", e.target.value)} placeholder="Customer A, Customer B" />
           </div>
           <div>
             <Label className="text-xs">Notes</Label>
