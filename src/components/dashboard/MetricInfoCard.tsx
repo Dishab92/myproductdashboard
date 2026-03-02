@@ -59,7 +59,7 @@ export function MetricInfoCard({ metricId, className }: MetricInfoCardProps) {
     <HoverCard openDelay={200} closeDelay={100}>
       <HoverCardTrigger asChild>
         <button className="inline-flex shrink-0 focus:outline-none focus:ring-1 focus:ring-primary rounded">
-          <Info className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-primary transition-colors cursor-help" />
+          <Info className="w-3.5 h-3.5 text-muted-foreground hover:text-primary transition-colors cursor-help" />
         </button>
       </HoverCardTrigger>
       <HoverCardContent

@@ -26,13 +26,12 @@ export function TrendLineChart({ data, lines = defaultLines }: Props) {
           <YAxis tick={{ fontSize: 11, fill: "hsl(215, 15%, 55%)" }} />
           <Tooltip
             contentStyle={{
-              backgroundColor: "hsla(220, 30%, 8%, 0.9)",
-              backdropFilter: "blur(12px)",
-              border: "1px solid hsla(195, 100%, 50%, 0.2)",
+              backgroundColor: "hsl(var(--card))",
+              border: "1px solid hsl(var(--border))",
               borderRadius: "8px",
               fontSize: "12px",
-              color: "hsl(210, 20%, 95%)",
-              boxShadow: "0 0 20px hsla(195, 100%, 50%, 0.1)",
+              color: "hsl(var(--card-foreground))",
+              boxShadow: "0 4px 12px hsla(0, 0%, 0%, 0.15)",
             }}
             labelFormatter={(v) => new Date(v).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
           />
