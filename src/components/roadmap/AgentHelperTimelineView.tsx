@@ -25,12 +25,12 @@ interface AgentHelperTimelineViewProps {
 export function AgentHelperTimelineView({ items, weights, onEdit, customerSafe, isAdmin }: AgentHelperTimelineViewProps) {
   const scored = items.map((item) => ({
     ...item,
-    weightedScore: computeWeightedScore(item as any, weights),
+    weightedScore: computeWeightedScore(item, weights),
   }));
 
   const bucketGroups = AH_TARGET_BUCKETS.map((bucket) => ({
     bucket,
-    items: scored.filter((i) => (i as any).target_bucket === bucket),
+    items: scored.filter((i) => i.target_bucket === bucket),
   })).filter((g) => g.items.length > 0);
 
   return (
@@ -57,13 +57,13 @@ export function AgentHelperTimelineView({ items, weights, onEdit, customerSafe, 
               >
                 <div className="flex items-start justify-between gap-2">
                   <h4 className="text-sm font-medium text-foreground leading-tight flex-1">{item.title}</h4>
-                  <WeightScoreBadge scores={item as any} weights={weights} total={item.weightedScore} />
+                  <WeightScoreBadge scores={item} weights={weights} total={item.weightedScore} />
                 </div>
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <Badge className={cn("text-[10px]", PRIORITY_COLORS[item.priority] || "")}>{item.priority}</Badge>
-                  <Badge className={cn("text-[10px]", STATUS_COLORS[(item as any).status] || "")}>{(item as any).status}</Badge>
+                  <Badge className={cn("text-[10px]", STATUS_COLORS[item.status] || "")}>{item.status}</Badge>
                   {!customerSafe && (
-                    <Badge className={cn("text-[10px]", FEATURE_SOURCE_COLORS[(item as any).feature_source] || "")}>{(item as any).feature_source}</Badge>
+                    <Badge className={cn("text-[10px]", FEATURE_SOURCE_COLORS[item.feature_source] || "")}>{item.feature_source}</Badge>
                   )}
                 </div>
                 {item.description && (

@@ -49,8 +49,13 @@ export const DEFAULT_WEIGHTS: ScoringWeights = {
   w_executive_input: 10,
 };
 
+export type ScoreFields = Pick<
+  import("@/components/roadmap/RoadmapCard").RoadmapItem,
+  "score_common_customer_ask" | "score_competitor_market_research" | "score_seller_prospect_input" | "score_technical_debt" | "score_executive_input"
+>;
+
 export function computeWeightedScore(
-  scores: { score_common_customer_ask: number; score_competitor_market_research: number; score_seller_prospect_input: number; score_technical_debt: number; score_executive_input: number },
+  scores: ScoreFields,
   weights: ScoringWeights
 ): number {
   return (
@@ -63,11 +68,11 @@ export function computeWeightedScore(
 }
 
 export function getScoreBreakdown(
-  scores: Record<string, number>,
+  scores: ScoreFields,
   weights: ScoringWeights
 ): { label: string; raw: number; weight: number; contribution: number }[] {
   return SCORE_DIMENSIONS.map((d) => {
-    const raw = (scores[d.key] || 0);
+    const raw = scores[d.key as keyof ScoreFields] || 0;
     const wKey = `w_${d.key.replace("score_", "")}` as keyof ScoringWeights;
     const weight = weights[wKey];
     const contribution = (raw / 5) * 100 * (weight / 100);

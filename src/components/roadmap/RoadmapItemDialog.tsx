@@ -44,21 +44,20 @@ export function RoadmapItemDialog({ open, onOpenChange, item, onSaved, agentHelp
 
   useEffect(() => {
     if (item) {
-      const a = item as any;
       setForm({
         title: item.title, description: item.description, product_type: item.product_type,
         category: item.category, priority: item.priority, status: item.status,
         release_quarter: item.release_quarter || "", target_date: item.target_date || "",
         owner: item.owner, customer_visibility: item.customer_visibility,
         linked_customers: item.linked_customers.join(", "), notes: item.notes,
-        target_bucket: a.target_bucket || "Future", sprint: a.sprint || "",
-        jira_link: a.jira_link || "", feature_type: a.feature_type || "New Feature",
-        feature_source: a.feature_source || "Product",
-        score_common_customer_ask: a.score_common_customer_ask || 0,
-        score_competitor_market_research: a.score_competitor_market_research || 0,
-        score_seller_prospect_input: a.score_seller_prospect_input || 0,
-        score_technical_debt: a.score_technical_debt || 0,
-        score_executive_input: a.score_executive_input || 0,
+        target_bucket: item.target_bucket || "Future", sprint: item.sprint || "",
+        jira_link: item.jira_link || "", feature_type: item.feature_type || "New Feature",
+        feature_source: item.feature_source || "Product",
+        score_common_customer_ask: item.score_common_customer_ask || 0,
+        score_competitor_market_research: item.score_competitor_market_research || 0,
+        score_seller_prospect_input: item.score_seller_prospect_input || 0,
+        score_technical_debt: item.score_technical_debt || 0,
+        score_executive_input: item.score_executive_input || 0,
       });
     } else {
       setForm({
@@ -79,7 +78,7 @@ export function RoadmapItemDialog({ open, onOpenChange, item, onSaved, agentHelp
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { toast.error("Not authenticated"); setSaving(false); return; }
 
-    const payload: any = {
+    const payload = {
       title: form.title.trim(), description: form.description, product_type: form.product_type,
       category: form.category, priority: form.priority, status: form.status,
       release_quarter: form.release_quarter || null, target_date: form.target_date || null,
@@ -97,9 +96,9 @@ export function RoadmapItemDialog({ open, onOpenChange, item, onSaved, agentHelp
 
     let error;
     if (item) {
-      ({ error } = await (supabase.from("roadmap_items") as any).update(payload).eq("id", item.id));
+      ({ error } = await supabase.from("roadmap_items").update(payload).eq("id", item.id));
     } else {
-      ({ error } = await (supabase.from("roadmap_items") as any).insert(payload));
+      ({ error } = await supabase.from("roadmap_items").insert(payload));
     }
     setSaving(false);
     if (error) { toast.error(error.message); return; }
@@ -188,12 +187,12 @@ export function RoadmapItemDialog({ open, onOpenChange, item, onSaved, agentHelp
                   <div key={d.key} className="flex items-center gap-3">
                     <Label className="text-[11px] w-32 shrink-0">{d.shortLabel}</Label>
                     <Slider
-                      value={[(form as any)[d.key]]}
+                      value={[form[d.key as keyof typeof form] as number]}
                       onValueChange={([v]) => set(d.key, v)}
                       min={0} max={5} step={1}
                       className="flex-1"
                     />
-                    <span className="text-xs font-mono w-4 text-right">{(form as any)[d.key]}</span>
+                    <span className="text-xs font-mono w-4 text-right">{form[d.key as keyof typeof form] as number}</span>
                   </div>
                 ))}
               </div>

@@ -18,29 +18,28 @@ export interface RoadmapItem {
   owner_id: string;
   created_at: string;
   updated_at: string;
-  // Agent Helper extensions
-  target_bucket?: string;
-  sprint?: string;
-  jira_link?: string;
-  feature_type?: string;
-  feature_source?: string;
-  score_common_customer_ask?: number;
-  score_competitor_market_research?: number;
-  score_seller_prospect_input?: number;
-  score_technical_debt?: number;
-  score_executive_input?: number;
+  target_bucket: string;
+  sprint: string;
+  jira_link: string;
+  feature_type: string;
+  feature_source: string;
+  score_common_customer_ask: number;
+  score_competitor_market_research: number;
+  score_seller_prospect_input: number;
+  score_technical_debt: number;
+  score_executive_input: number;
 }
 
 const PRODUCT_COLORS: Record<string, string> = {
-  "Agent Helper": "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
-  "Case QA": "bg-violet-500/20 text-violet-300 border-violet-500/30",
-  "Escalation Manager": "bg-amber-500/20 text-amber-300 border-amber-500/30",
+  "Agent Helper": "bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border-cyan-500/30",
+  "Case QA": "bg-violet-500/20 text-violet-700 dark:text-violet-300 border-violet-500/30",
+  "Escalation Manager": "bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30",
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
-  P0: "bg-red-500/20 text-red-300 border-red-500/30",
-  P1: "bg-orange-500/20 text-orange-300 border-orange-500/30",
-  P2: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+  P0: "bg-red-500/20 text-red-700 dark:text-red-300 border-red-500/30",
+  P1: "bg-orange-500/20 text-orange-700 dark:text-orange-300 border-orange-500/30",
+  P2: "bg-yellow-500/20 text-yellow-700 dark:text-yellow-300 border-yellow-500/30",
   P3: "bg-muted text-muted-foreground border-border",
 };
 

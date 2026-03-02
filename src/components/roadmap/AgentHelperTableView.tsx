@@ -28,7 +28,7 @@ interface AgentHelperTableViewProps {
 export function AgentHelperTableView({ items, weights, onEdit, onDelete, customerSafe, isAdmin }: AgentHelperTableViewProps) {
   const scored = items.map((item) => ({
     ...item,
-    weightedScore: computeWeightedScore(item as any, weights),
+    weightedScore: computeWeightedScore(item, weights),
   })).sort((a, b) => b.weightedScore - a.weightedScore);
 
   return (
@@ -52,21 +52,21 @@ export function AgentHelperTableView({ items, weights, onEdit, onDelete, custome
         <tbody>
           {scored.map((item) => (
             <tr key={item.id} className="border-t border-border/50 hover:bg-muted/30 transition-colors">
-              <td className="px-3 py-2"><Badge className={cn("text-[10px] whitespace-nowrap", STATUS_COLORS[(item as any).status] || "")}>{(item as any).status}</Badge></td>
-              <td className="px-2 py-2"><Badge className={cn("text-[10px] whitespace-nowrap", FEATURE_TYPE_COLORS[(item as any).feature_type] || "")}>{(item as any).feature_type}</Badge></td>
-              <td className="px-2 py-2"><Badge className={cn("text-[10px] whitespace-nowrap", FEATURE_SOURCE_COLORS[(item as any).feature_source] || "")}>{(item as any).feature_source}</Badge></td>
+              <td className="px-3 py-2"><Badge className={cn("text-[10px] whitespace-nowrap", STATUS_COLORS[item.status] || "")}>{item.status}</Badge></td>
+              <td className="px-2 py-2"><Badge className={cn("text-[10px] whitespace-nowrap", FEATURE_TYPE_COLORS[item.feature_type] || "")}>{item.feature_type}</Badge></td>
+              <td className="px-2 py-2"><Badge className={cn("text-[10px] whitespace-nowrap", FEATURE_SOURCE_COLORS[item.feature_source] || "")}>{item.feature_source}</Badge></td>
               <td className="px-2 py-2 text-center"><Badge className={cn("text-[10px] whitespace-nowrap", PRIORITY_COLORS[item.priority] || "")}>{item.priority}</Badge></td>
               <td className="px-3 py-2 font-medium text-foreground">{item.title}</td>
-              <td className="px-2 py-2 text-muted-foreground">{(item as any).target_bucket}</td>
-              <td className="px-2 py-2 text-muted-foreground">{(item as any).sprint || "—"}</td>
+              <td className="px-2 py-2 text-muted-foreground">{item.target_bucket}</td>
+              <td className="px-2 py-2 text-muted-foreground">{item.sprint || "—"}</td>
               <td className="px-2 py-2">
-                {(item as any).jira_link ? (
-                  <a href={(item as any).jira_link} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Link</a>
+                {item.jira_link ? (
+                  <a href={item.jira_link} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Link</a>
                 ) : <span className="text-muted-foreground/40">—</span>}
               </td>
               {!customerSafe && <td className="px-2 py-2 text-muted-foreground line-clamp-2 max-w-[200px]">{item.notes || "—"}</td>}
               <td className="px-2 py-2 text-center">
-                <WeightScoreBadge scores={item as any} weights={weights} total={item.weightedScore} />
+                <WeightScoreBadge scores={item} weights={weights} total={item.weightedScore} />
               </td>
               {isAdmin && (
                 <td className="px-2 py-2 text-center">

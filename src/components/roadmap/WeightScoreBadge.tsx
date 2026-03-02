@@ -1,10 +1,10 @@
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { getScoreBreakdown, type ScoringWeights } from "@/lib/agent-helper-constants";
+import { getScoreBreakdown, type ScoringWeights, type ScoreFields } from "@/lib/agent-helper-constants";
 
 interface WeightScoreBadgeProps {
-  scores: Record<string, number>;
+  scores: ScoreFields;
   weights: ScoringWeights;
   total: number;
 }
