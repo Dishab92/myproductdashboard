@@ -25,12 +25,12 @@ export function WeightedSheetView({ items, weights, onEdit, onRefresh, customerS
 
   const scored = items.map((item) => ({
     ...item,
-    weightedScore: computeWeightedScore(item as any, weights),
+    weightedScore: computeWeightedScore(item, weights),
   })).sort((a, b) => b.weightedScore - a.weightedScore);
 
   const handleScoreChange = async (itemId: string, key: string, val: number) => {
     setEditingCell(null);
-    const { error } = await (supabase.from("roadmap_items") as any).update({ [key]: val }).eq("id", itemId);
+    const { error } = await supabase.from("roadmap_items").update({ [key]: val } as any).eq("id", itemId);
     if (error) toast.error("Failed to update score");
     else onRefresh();
   };
@@ -74,27 +74,27 @@ export function WeightedSheetView({ items, weights, onEdit, onRefresh, customerS
                 {item.title}
               </td>
               <td className="px-2 py-2">
-                <Badge className={cn("text-[10px] whitespace-nowrap", STATUS_COLORS[(item as any).status] || "")}>{(item as any).status}</Badge>
+                <Badge className={cn("text-[10px] whitespace-nowrap", STATUS_COLORS[item.status] || "")}>{item.status}</Badge>
               </td>
               <td className="px-2 py-2">
-                <Badge className={cn("text-[10px] whitespace-nowrap", FEATURE_TYPE_COLORS[(item as any).feature_type] || "")}>{(item as any).feature_type}</Badge>
+                <Badge className={cn("text-[10px] whitespace-nowrap", FEATURE_TYPE_COLORS[item.feature_type] || "")}>{item.feature_type}</Badge>
               </td>
               <td className="px-2 py-2">
-                <Badge className={cn("text-[10px] whitespace-nowrap", FEATURE_SOURCE_COLORS[(item as any).feature_source] || "")}>{(item as any).feature_source}</Badge>
+                <Badge className={cn("text-[10px] whitespace-nowrap", FEATURE_SOURCE_COLORS[item.feature_source] || "")}>{item.feature_source}</Badge>
               </td>
               <td className="px-2 py-2 text-center">
                 <Badge className={cn("text-[10px] whitespace-nowrap", PRIORITY_COLORS[item.priority] || "")}>{item.priority}</Badge>
               </td>
-              <td className="px-2 py-2 text-muted-foreground">{(item as any).target_bucket}</td>
+              <td className="px-2 py-2 text-muted-foreground">{item.target_bucket}</td>
               {!customerSafe && (
                 <td className="px-2 py-2">
-                  {(item as any).jira_link ? (
-                    <a href={(item as any).jira_link} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>Link</a>
+                  {item.jira_link ? (
+                    <a href={item.jira_link} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>Link</a>
                   ) : <span className="text-muted-foreground/40">—</span>}
                 </td>
               )}
               {SCORE_DIMENSIONS.map((d) => {
-                const val = (item as any)[d.key] || 0;
+                const val = item[d.key as keyof typeof item] as number || 0;
                 const isEditing = editingCell?.id === item.id && editingCell?.key === d.key;
                 return (
                   <td key={d.key} className="px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}>
@@ -127,7 +127,7 @@ export function WeightedSheetView({ items, weights, onEdit, onRefresh, customerS
                 );
               })}
               <td className="px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}>
-                <WeightScoreBadge scores={item as any} weights={weights} total={item.weightedScore} />
+                <WeightScoreBadge scores={item} weights={weights} total={item.weightedScore} />
               </td>
             </tr>
           ))}

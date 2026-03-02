@@ -66,7 +66,7 @@ export function BulkImportDialog({ open, onOpenChange, onImported }: BulkImportD
       score_executive_input: parseInt(row.score_executive_input) || 0,
     }));
 
-    const { error } = await (supabase.from("roadmap_items") as any).insert(payload);
+    const { error } = await supabase.from("roadmap_items").insert(payload);
     setImporting(false);
     if (error) { toast.error(error.message); return; }
     toast.success(`Imported ${payload.length} items`);

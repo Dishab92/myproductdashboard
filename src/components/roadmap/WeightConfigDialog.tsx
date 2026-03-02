@@ -28,7 +28,7 @@ export function WeightConfigDialog({ open, onOpenChange, weights, onSaved }: Wei
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setSaving(false); return; }
 
-    const { error } = await (supabase.from("scoring_weights") as any)
+    const { error } = await supabase.from("scoring_weights")
       .upsert({ owner_id: user.id, product_type: "Agent Helper", ...form }, { onConflict: "owner_id,product_type" });
 
     setSaving(false);

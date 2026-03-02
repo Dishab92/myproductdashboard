@@ -27,7 +27,7 @@ export default function Roadmap() {
   const [deleteItem, setDeleteItem] = useState<RoadmapItem | null>(null);
 
   const fetchItems = useCallback(async () => {
-    const { data, error } = await (supabase.from("roadmap_items") as any).select("*").order("created_at", { ascending: false });
+    const { data, error } = await supabase.from("roadmap_items").select("*").order("created_at", { ascending: false });
     if (error) { toast.error("Failed to load roadmap"); return; }
     setItems(data || []);
     setLoading(false);
@@ -37,7 +37,7 @@ export default function Roadmap() {
 
   const handleDelete = async () => {
     if (!deleteItem) return;
-    const { error } = await (supabase.from("roadmap_items") as any).delete().eq("id", deleteItem.id);
+    const { error } = await supabase.from("roadmap_items").delete().eq("id", deleteItem.id);
     if (error) toast.error("Delete failed");
     else { toast.success("Deleted"); fetchItems(); }
     setDeleteItem(null);
