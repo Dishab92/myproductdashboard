@@ -1,44 +1,52 @@
 
 
-# Fix: Real Email Delivery for Approval + Chart Visibility
+# Fix: Real Approval Emails via Resend + Chart Visibility
 
-## 1. Send Real Approval Emails via Resend
+## Overview
 
-The `notify-admin` edge function currently only logs the email HTML to console. We need to actually deliver it to your inbox (disha.bhanot@gmail.com).
+When someone signs in with Google, you (disha.bhanot@gmail.com) will receive a real email with an "Approve Access" button. Until you click it, the user sees a "Pending Approval" screen.
 
-**Approach:** Use Resend (a transactional email service) to send the approval notification. This requires:
+Currently the email is only logged to console -- we need to actually send it.
 
-1. You create a free Resend account at [resend.com](https://resend.com)
-2. Get your API key from the Resend dashboard
-3. We store it as a secret in your project
-4. The edge function sends the approval email to your admin address
+---
 
-**What changes in `supabase/functions/notify-admin/index.ts`:**
-- Import the Resend library
-- Replace the `console.log` calls with an actual `resend.emails.send()` call
-- Send the existing approval HTML (with the "Approve Access" button) to the admin email
-- On Resend's free tier, you can send from `onboarding@resend.dev` immediately (no domain setup needed), or verify your own domain for a branded sender address
+## 1. Real Email Delivery via Resend
 
-**No changes to the approval flow itself** -- the approve-user function, the pending approval page, and the database trigger all stay exactly as they are. The only change is that the email actually gets delivered now.
+**What you need to do first:**
+1. Go to [resend.com](https://resend.com) and create a free account
+2. In the Resend dashboard, copy your API key
+3. Paste it when prompted (I will ask you for it during implementation)
 
-## 2. Fix Chart Visibility (Light Mode)
+**What changes in the code:**
 
-### TrendLineChart.tsx (line 19)
-Change hardcoded CartesianGrid stroke from `hsla(220, 20%, 16%, 0.6)` (invisible in light mode) to a theme-aware value. Also fix axis tick fills on lines 22 and 26.
+The `notify-admin` edge function (`supabase/functions/notify-admin/index.ts`) will be rewritten to:
+- Call the Resend API with a simple `fetch` POST to `https://api.resend.com/emails`
+- Send the existing approval HTML email (with the green "Approve Access" button) to `disha.bhanot@gmail.com`
+- Use `onboarding@resend.dev` as the sender (works immediately on Resend's free tier, no domain setup needed)
+- Remove the AI gateway call and console.log fallback
 
-### ScoreHistogram.tsx (lines 43-45, 71)
-- Replace hardcoded axis tick fills with `hsl(var(--muted-foreground))`
-- Add full theme-aware tooltip `contentStyle` (background, border, text color) to both Tooltip components
+The rest of the approval flow (approve-user function, pending approval page, database trigger) stays exactly the same.
+
+## 2. Fix Chart Visibility in Light Mode
+
+### TrendLineChart.tsx
+- **Line 19**: Change grid stroke from `hsla(220, 20%, 16%, 0.6)` to `hsla(var(--border), 0.4)`
+- **Lines 22, 26**: Change axis tick fill from `hsl(215, 15%, 55%)` to `hsl(var(--muted-foreground))`
+
+### ScoreHistogram.tsx
+- **Lines 43-44**: Change axis tick fill from `hsl(220, 10%, 46%)` to `hsl(var(--muted-foreground))`
+- **Line 45**: Add full theme-aware tooltip styling (background, border, text color using CSS variables)
+- **Line 71**: Same tooltip fix for the pie chart
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `supabase/functions/notify-admin/index.ts` | Replace console.log with Resend email send |
-| `src/components/dashboard/TrendLineChart.tsx` | Fix grid stroke + axis tick colors for light mode |
-| `src/components/dashboard/ScoreHistogram.tsx` | Fix tooltip styles + axis tick colors |
+| `supabase/functions/notify-admin/index.ts` | Replace console.log with Resend API call |
+| `src/components/dashboard/TrendLineChart.tsx` | Theme-aware grid + axis colors |
+| `src/components/dashboard/ScoreHistogram.tsx` | Theme-aware tooltip + axis colors |
 
-## Setup Step Required
+## Setup Required
 
-Before implementation, you will need to provide a Resend API key. I will walk you through getting one after you approve this plan.
+A `RESEND_API_KEY` secret will be added to the project. I will prompt you to paste your Resend API key during implementation.
 
