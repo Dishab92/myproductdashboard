@@ -40,9 +40,9 @@ export function ScoreHistogram({ scores }: Props) {
         <div className="h-[220px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={buckets}>
-              <XAxis dataKey="range" tick={{ fontSize: 10, fill: "hsl(220, 10%, 46%)" }} />
-              <YAxis tick={{ fontSize: 11, fill: "hsl(220, 10%, 46%)" }} />
-              <Tooltip contentStyle={{ fontSize: "12px", borderRadius: "8px" }} />
+              <XAxis dataKey="range" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+              <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+              <Tooltip contentStyle={{ fontSize: "12px", borderRadius: "8px", backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", color: "hsl(var(--card-foreground))" }} />
               <Bar dataKey="count" fill="hsl(173, 58%, 39%)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -68,7 +68,7 @@ export function ScoreHistogram({ scores }: Props) {
                   <Cell key={d.grade} fill={GRADE_COLORS[d.grade] || "hsl(220, 10%, 60%)"} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={{ fontSize: "12px", borderRadius: "8px" }} />
+              <Tooltip contentStyle={{ fontSize: "12px", borderRadius: "8px", backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", color: "hsl(var(--card-foreground))" }} />
             </PieChart>
           </ResponsiveContainer>
         </div>

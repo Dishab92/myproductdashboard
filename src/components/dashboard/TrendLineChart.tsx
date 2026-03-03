@@ -16,14 +16,14 @@ export function TrendLineChart({ data, lines = defaultLines }: Props) {
     <div className="h-[280px] w-full">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsla(220, 20%, 16%, 0.6)" />
+          <CartesianGrid strokeDasharray="3 3" stroke="hsla(var(--border), 0.4)" />
           <XAxis
             dataKey="date"
-            tick={{ fontSize: 10, fill: "hsl(215, 15%, 55%)" }}
+            tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
             tickFormatter={(v) => new Date(v).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
             interval="preserveStartEnd"
           />
-          <YAxis tick={{ fontSize: 11, fill: "hsl(215, 15%, 55%)" }} />
+          <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
           <Tooltip
             contentStyle={{
               backgroundColor: "hsl(var(--card))",
