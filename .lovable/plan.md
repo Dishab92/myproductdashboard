@@ -1,86 +1,44 @@
 
 
-# Fix: Approval Email Delivery + Remaining Hover Visibility Issues
+# Fix: Real Email Delivery for Approval + Chart Visibility
 
-## Problem Summary
+## 1. Send Real Approval Emails via Resend
 
-Three issues to address:
+The `notify-admin` edge function currently only logs the email HTML to console. We need to actually deliver it to your inbox (disha.bhanot@gmail.com).
 
-1. **Approval emails are never sent** -- the `notify-admin` edge function generates the HTML but only logs it to console. No email is actually delivered to the admin.
-2. **Chart grid lines invisible in light mode** -- `TrendLineChart.tsx` has a hardcoded dark stroke color.
-3. **ScoreHistogram tooltips unstyled** -- missing theme-aware background/text colors, and hardcoded axis tick colors.
+**Approach:** Use Resend (a transactional email service) to send the approval notification. This requires:
 
----
+1. You create a free Resend account at [resend.com](https://resend.com)
+2. Get your API key from the Resend dashboard
+3. We store it as a secret in your project
+4. The edge function sends the approval email to your admin address
 
-## Changes
+**What changes in `supabase/functions/notify-admin/index.ts`:**
+- Import the Resend library
+- Replace the `console.log` calls with an actual `resend.emails.send()` call
+- Send the existing approval HTML (with the "Approve Access" button) to the admin email
+- On Resend's free tier, you can send from `onboarding@resend.dev` immediately (no domain setup needed), or verify your own domain for a branded sender address
 
-### 1. Fix Approval Email Delivery (`supabase/functions/notify-admin/index.ts`)
+**No changes to the approval flow itself** -- the approve-user function, the pending approval page, and the database trigger all stay exactly as they are. The only change is that the email actually gets delivered now.
 
-Replace the current console-log-only approach with actual email sending using Supabase Auth Admin's `sendRawEmail` or, more reliably, by calling the Supabase REST API to invoke the built-in email service.
+## 2. Fix Chart Visibility (Light Mode)
 
-**Approach:** Use `supabase.auth.admin.inviteUserByEmail` is not appropriate here. Instead, use the **Resend** integration or the Lovable Cloud email sending capability. Since we have `ADMIN_EMAIL` secret configured, we can send the email using Supabase's built-in `pg_net` extension or a direct SMTP/API call.
+### TrendLineChart.tsx (line 19)
+Change hardcoded CartesianGrid stroke from `hsla(220, 20%, 16%, 0.6)` (invisible in light mode) to a theme-aware value. Also fix axis tick fills on lines 22 and 26.
 
-**Recommended approach:** Use Supabase's `auth.admin` API to send a custom email, or integrate a simple email-sending mechanism. The cleanest path is to use the Supabase `pg_net` HTTP extension to call an email API, but since we're in an edge function, we can directly use the `fetch` API to call a transactional email service.
-
-**Simplest fix:** Since Lovable Cloud has email domain capabilities, configure email sending through the platform's built-in email infrastructure:
-- Check if a custom email domain is configured
-- Use the Supabase project's built-in SMTP to send the approval notification to the admin
-
-**Implementation:**
-- Rewrite the `notify-admin` function to use Supabase's built-in auth email sending (via `supabase.auth.admin`) or use `pg_net` to POST to an email API
-- If no email service is available, fall back to auto-approving users from a whitelist of allowed email domains (e.g., `@grazitti.com`), making the flow seamless
-
-**Alternative fast fix (recommended for now):**
-- Add a domain whitelist (e.g., `grazitti.com`) in the `handle_new_user` database trigger
-- Users from whitelisted domains get auto-approved on signup
-- Other users still go through the approval flow
-- This makes sign-in seamless for known team members
-
-### 2. Fix TrendLineChart Grid Visibility (`src/components/dashboard/TrendLineChart.tsx`)
-
-**Line 19:** Change hardcoded CartesianGrid stroke:
-```
-Before: stroke="hsla(220, 20%, 16%, 0.6)"
-After:  stroke="hsla(var(--border), 0.4)"
-```
-
-### 3. Fix ScoreHistogram Theme Awareness (`src/components/dashboard/ScoreHistogram.tsx`)
-
-**Lines 43-44:** Replace hardcoded axis tick fills:
-```
-Before: fill: "hsl(220, 10%, 46%)"
-After:  fill: "hsl(var(--muted-foreground))"
-```
-
-**Lines 45 and 71:** Add full theme-aware tooltip contentStyle to both Tooltip components:
-```typescript
-contentStyle={{
-  backgroundColor: "hsl(var(--card))",
-  border: "1px solid hsl(var(--border))",
-  borderRadius: "8px",
-  fontSize: "12px",
-  color: "hsl(var(--card-foreground))",
-  boxShadow: "0 4px 12px hsla(0, 0%, 0%, 0.15)",
-}}
-```
-
----
+### ScoreHistogram.tsx (lines 43-45, 71)
+- Replace hardcoded axis tick fills with `hsl(var(--muted-foreground))`
+- Add full theme-aware tooltip `contentStyle` (background, border, text color) to both Tooltip components
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `supabase/functions/notify-admin/index.ts` | Add domain-based auto-approval or actual email sending |
-| `src/components/dashboard/TrendLineChart.tsx` | Fix CartesianGrid stroke to use theme variable |
-| `src/components/dashboard/ScoreHistogram.tsx` | Fix tooltip contentStyle + axis tick colors |
+| `supabase/functions/notify-admin/index.ts` | Replace console.log with Resend email send |
+| `src/components/dashboard/TrendLineChart.tsx` | Fix grid stroke + axis tick colors for light mode |
+| `src/components/dashboard/ScoreHistogram.tsx` | Fix tooltip styles + axis tick colors |
 
-## Clarification Needed
+## Setup Step Required
 
-For the approval flow, there are two paths:
-
-**Option A -- Domain Whitelist (fast, seamless):** Auto-approve users from specific email domains (e.g., `grazitti.com`) in the database trigger. Other domains still require manual approval.
-
-**Option B -- Real Email Delivery:** Set up an email domain through Lovable Cloud and send actual approval emails to the admin. This requires configuring an email domain.
-
-Both can coexist. The recommendation is Option A for immediate team access + Option B for external users later.
+Before implementation, you will need to provide a Resend API key. I will walk you through getting one after you approve this plan.
 
