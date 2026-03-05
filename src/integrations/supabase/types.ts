@@ -139,6 +139,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          notified: boolean
         }
         Insert: {
           approval_token?: string
@@ -148,6 +149,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          notified?: boolean
         }
         Update: {
           approval_token?: string
@@ -157,6 +159,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          notified?: boolean
         }
         Relationships: []
       }

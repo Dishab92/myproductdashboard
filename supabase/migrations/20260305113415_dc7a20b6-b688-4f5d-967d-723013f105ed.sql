@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN notified boolean NOT NULL DEFAULT false;

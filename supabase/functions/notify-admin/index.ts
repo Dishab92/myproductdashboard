@@ -10,9 +10,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { email, full_name, approval_token } = await req.json();
+    const { email, full_name, approval_token, user_id } = await req.json();
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const resendApiKey = Deno.env.get("RESEND_API_KEY")!;
 
     const approveUrl = `${supabaseUrl}/functions/v1/approve-user?token=${approval_token}`;
@@ -67,6 +68,20 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: "Failed to send email", details: resendData }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Mark profile as notified so we never send again
+    if (user_id) {
+      await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${user_id}`, {
+        method: "PATCH",
+        headers: {
+          "apikey": supabaseServiceKey,
+          "Authorization": `Bearer ${supabaseServiceKey}`,
+          "Content-Type": "application/json",
+          "Prefer": "return=minimal",
+        },
+        body: JSON.stringify({ notified: true }),
+      });
     }
 
     return new Response(
