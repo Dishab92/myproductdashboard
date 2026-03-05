@@ -70,6 +70,20 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Mark profile as notified so we never send again
+    if (user_id) {
+      await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${user_id}`, {
+        method: "PATCH",
+        headers: {
+          "apikey": supabaseServiceKey,
+          "Authorization": `Bearer ${supabaseServiceKey}`,
+          "Content-Type": "application/json",
+          "Prefer": "return=minimal",
+        },
+        body: JSON.stringify({ notified: true }),
+      });
+    }
+
     return new Response(
       JSON.stringify({ success: true, message: "Approval email sent", id: resendData.id }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

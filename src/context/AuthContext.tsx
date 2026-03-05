@@ -66,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 email: data.email,
                 full_name: data.full_name,
                 approval_token: data.approval_token,
+                user_id: userId,
               }),
             }
           );
