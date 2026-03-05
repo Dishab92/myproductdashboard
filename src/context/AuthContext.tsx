@@ -8,6 +8,7 @@ interface Profile {
   full_name: string | null;
   avatar_url: string | null;
   approved: boolean;
+  notified: boolean;
   approval_token: string;
   created_at: string;
 }
