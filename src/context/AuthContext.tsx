@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       fetchRole(userId);
 
       // If new user (not approved), trigger notify-admin
-      if (!data.approved) {
+      if (!data.approved && !data.notified) {
         try {
           const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
           await fetch(
