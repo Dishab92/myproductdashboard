@@ -1,15 +1,31 @@
-import { useState } from "react";
-import { Navigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Shield } from "lucide-react";
 import { Starfield } from "@/components/effects/Starfield";
+import { toast } from "@/hooks/use-toast";
 
 export default function Login() {
   const { user, isApproved, loading } = useAuth();
   const [signingIn, setSigningIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    const approved = searchParams.get("approved");
+    if (approved) {
+      if (approved === "true") {
+        toast({ title: "Access Approved ✅", description: "User has been granted access. They can now sign in." });
+      } else if (approved === "already") {
+        toast({ title: "Already Approved", description: "This user was already approved." });
+      } else if (approved === "error") {
+        toast({ title: "Approval Failed", description: "Something went wrong. Please try again.", variant: "destructive" });
+      }
+      setSearchParams({}, { replace: true });
+    }
+  }, []);
 
   if (loading) {
     return (
