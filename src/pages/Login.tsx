@@ -11,6 +11,21 @@ export default function Login() {
   const { user, isApproved, loading } = useAuth();
   const [signingIn, setSigningIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    const approved = searchParams.get("approved");
+    if (approved) {
+      if (approved === "true") {
+        toast({ title: "Access Approved ✅", description: "User has been granted access. They can now sign in." });
+      } else if (approved === "already") {
+        toast({ title: "Already Approved", description: "This user was already approved." });
+      } else if (approved === "error") {
+        toast({ title: "Approval Failed", description: "Something went wrong. Please try again.", variant: "destructive" });
+      }
+      setSearchParams({}, { replace: true });
+    }
+  }, []);
 
   if (loading) {
     return (
