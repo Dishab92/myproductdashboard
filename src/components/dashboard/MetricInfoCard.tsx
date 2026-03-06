@@ -64,7 +64,7 @@ export function MetricInfoCard({ metricId, className }: MetricInfoCardProps) {
       </HoverCardTrigger>
       <HoverCardContent
         side="top"
-        className="w-72 glass-strong border-glow-cyan p-4"
+        className="w-72 glass-strong border-glow-cyan p-4 z-[100]"
         sideOffset={8}
       >
         <DefinitionPanel metricId={metricId} />
