@@ -1,52 +1,35 @@
 
 
-# Fix: Real Approval Emails via Resend + Chart Visibility
+# Agent Adoption: Use Events Data Only, Filter by Customer
 
-## Overview
+## What's Changing
 
-When someone signs in with Google, you (disha.bhanot@gmail.com) will receive a real email with an "Approve Access" button. Until you click it, the user sees a "Pending Approval" screen.
+1. **Remove the Agent Adoption CSV upload** — no more separate CSV upload panel, customer name input, or `agentAdoption` data source
+2. **Derive all data from `data.events`** — map `user_id` as agent, `feature`/`event_name` as feature used, count events as usage, `customer_name` for filtering
+3. **Customer dropdown always visible** — populated from distinct `customer_name` values in events (Accela, SUSE, Jama, Revenera, etc.), defaulting to "All"
+4. **Empty state updated** — instead of "Upload CSV", show "No event data. Upload reports CSV in Data Management."
 
-Currently the email is only logged to console -- we need to actually send it.
+## File: `src/pages/AgentAdoption.tsx`
 
----
+- Remove imports: `parseAgentAdoptionCSV`, `UploadPanel`, `Input`
+- Remove state: `customerInput`, `uploadResult`
+- Remove `setAgentAdoption` from `useData()`
+- Remove the upload Card block entirely
+- Change `allRecords` to always derive from `data.events`:
+  ```ts
+  const allRecords = useMemo(() => {
+    return data.events.map(e => ({
+      date: e.event_time,
+      agentName: e.user_id,
+      featureUsed: e.feature || e.event_name,
+      usageCount: 1,
+      customerName: e.customer_name,
+    }));
+  }, [data.events]);
+  ```
+- Customer dropdown always shows (when customers > 1), built from `data.events` customer names
+- All existing charts (leaderboard, feature breakdown, daily trend, heatmap) remain unchanged — they already work off `filtered` which derives from `allRecords`
+- Update empty state message to reference Data Management page
 
-## 1. Real Email Delivery via Resend
-
-**What you need to do first:**
-1. Go to [resend.com](https://resend.com) and create a free account
-2. In the Resend dashboard, copy your API key
-3. Paste it when prompted (I will ask you for it during implementation)
-
-**What changes in the code:**
-
-The `notify-admin` edge function (`supabase/functions/notify-admin/index.ts`) will be rewritten to:
-- Call the Resend API with a simple `fetch` POST to `https://api.resend.com/emails`
-- Send the existing approval HTML email (with the green "Approve Access" button) to `disha.bhanot@gmail.com`
-- Use `onboarding@resend.dev` as the sender (works immediately on Resend's free tier, no domain setup needed)
-- Remove the AI gateway call and console.log fallback
-
-The rest of the approval flow (approve-user function, pending approval page, database trigger) stays exactly the same.
-
-## 2. Fix Chart Visibility in Light Mode
-
-### TrendLineChart.tsx
-- **Line 19**: Change grid stroke from `hsla(220, 20%, 16%, 0.6)` to `hsla(var(--border), 0.4)`
-- **Lines 22, 26**: Change axis tick fill from `hsl(215, 15%, 55%)` to `hsl(var(--muted-foreground))`
-
-### ScoreHistogram.tsx
-- **Lines 43-44**: Change axis tick fill from `hsl(220, 10%, 46%)` to `hsl(var(--muted-foreground))`
-- **Line 45**: Add full theme-aware tooltip styling (background, border, text color using CSS variables)
-- **Line 71**: Same tooltip fix for the pie chart
-
-## Files Changed
-
-| File | Change |
-|------|--------|
-| `supabase/functions/notify-admin/index.ts` | Replace console.log with Resend API call |
-| `src/components/dashboard/TrendLineChart.tsx` | Theme-aware grid + axis colors |
-| `src/components/dashboard/ScoreHistogram.tsx` | Theme-aware tooltip + axis colors |
-
-## Setup Required
-
-A `RESEND_API_KEY` secret will be added to the project. I will prompt you to paste your Resend API key during implementation.
+No changes needed to `DataContext.tsx` or any other file — the `agentAdoption` array in state simply won't be used by this page anymore.
 
