@@ -1,15 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useData, DatasetMeta, UploadSummary } from "@/context/DataContext";
+import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { UploadPanel } from "@/components/dashboard/UploadPanel";
 import { TenantConfigTable } from "@/components/dashboard/TenantConfigTable";
 import { CustomerMappingDialog } from "@/components/dashboard/CustomerMappingDialog";
 import { detectAndParseEventsCSV, parseCustomersCSV, parseScoresCSV } from "@/lib/csv-parser";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Database, FileText, ShieldCheck, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Database, FileText, ShieldCheck, Loader2, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,

@@ -17,15 +17,33 @@ export default function AgentAdoption() {
   const [uploadResult, setUploadResult] = useState<{ success: boolean; message: string } | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState("All");
 
+  // Derive agent adoption data from main events when no specific CSV uploaded
+  const derivedFromEvents = useMemo(() => {
+    if (data.events.length === 0) return [];
+    return data.events.map(e => ({
+      date: e.event_time,
+      agentName: e.user_id,
+      featureUsed: e.feature || e.event_name,
+      usageCount: 1,
+      customerName: e.customer_name,
+    }));
+  }, [data.events]);
+
+  // Merge: use agentAdoption if available, else derive from events
+  const allRecords = useMemo(() => {
+    if (data.agentAdoption.length > 0) return data.agentAdoption;
+    return derivedFromEvents;
+  }, [data.agentAdoption, derivedFromEvents]);
+
   const customers = useMemo(() => {
-    const set = new Set(data.agentAdoption.map(r => r.customerName));
+    const set = new Set(allRecords.map(r => r.customerName));
     return ["All", ...Array.from(set)];
-  }, [data.agentAdoption]);
+  }, [allRecords]);
 
   const filtered = useMemo(() => {
-    if (selectedCustomer === "All") return data.agentAdoption;
-    return data.agentAdoption.filter(r => r.customerName === selectedCustomer);
-  }, [data.agentAdoption, selectedCustomer]);
+    if (selectedCustomer === "All") return allRecords;
+    return allRecords.filter(r => r.customerName === selectedCustomer);
+  }, [allRecords, selectedCustomer]);
 
   // Agent leaderboard
   const agentLeaderboard = useMemo(() => {
