@@ -137,6 +137,7 @@ export default function DataManagement() {
       setEventsResult({ success: false, message: err.message || "Upload failed" });
     } finally {
       setUploading(false);
+      loadDatasets();
     }
   };
 
