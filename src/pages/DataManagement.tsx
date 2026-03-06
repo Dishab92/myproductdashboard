@@ -336,6 +336,66 @@ export default function DataManagement() {
         />
       </div>
 
+      {/* Uploaded Datasets */}
+      <Card className="p-5 border bg-card">
+        <div className="flex items-center gap-2 mb-4">
+          <Database className="w-4 h-4 text-primary" />
+          <h3 className="text-sm font-semibold text-card-foreground">Uploaded Datasets</h3>
+        </div>
+        {datasetsLoading ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="w-4 h-4 animate-spin" /> Loading…
+          </div>
+        ) : datasets.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No datasets uploaded yet.</p>
+        ) : (
+          <div className="border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="text-xs">File Name</TableHead>
+                  <TableHead className="text-xs">Format</TableHead>
+                  <TableHead className="text-xs text-right">Rows</TableHead>
+                  <TableHead className="text-xs">Date Range</TableHead>
+                  <TableHead className="text-xs">Uploaded</TableHead>
+                  <TableHead className="text-xs w-10"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {datasets.map(ds => (
+                  <TableRow key={ds.id}>
+                    <TableCell className="text-sm font-medium">{ds.file_name}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className="text-[10px]">
+                        {ds.detected_format === "agent_helper" ? "Agent Helper" : "Standard"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-right tabular-nums">{ds.row_count.toLocaleString()}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground tabular-nums">
+                      {ds.date_min ? new Date(ds.date_min).toLocaleDateString() : "—"} → {ds.date_max ? new Date(ds.date_max).toLocaleDateString() : "—"}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {new Date(ds.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                        disabled={deletingId === ds.id}
+                        onClick={() => handleDeleteDataset(ds.id)}
+                      >
+                        {deletingId === ds.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </Card>
+
       {/* Tenant Configuration */}
       <TenantConfigTable />
 
