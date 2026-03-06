@@ -1,25 +1,17 @@
 import { useState, useMemo } from "react";
 import { useData } from "@/context/DataContext";
 import { useSnapshot } from "@/context/SnapshotContext";
-import { parseAgentAdoptionCSV } from "@/lib/csv-parser";
-import { UploadPanel } from "@/components/dashboard/UploadPanel";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { Users, BarChart3, TrendingUp, Grid3X3 } from "lucide-react";
 
 export default function AgentAdoption() {
-  const { data, setAgentAdoption } = useData();
-  const { isSnapshotMode } = useSnapshot();
-  const [customerInput, setCustomerInput] = useState("Accela");
-  const [uploadResult, setUploadResult] = useState<{ success: boolean; message: string } | null>(null);
+  const { data } = useData();
   const [selectedCustomer, setSelectedCustomer] = useState("All");
 
-  // Derive agent adoption data from main events when no specific CSV uploaded
-  const derivedFromEvents = useMemo(() => {
-    if (data.events.length === 0) return [];
+  const allRecords = useMemo(() => {
     return data.events.map(e => ({
       date: e.event_time,
       agentName: e.user_id,
@@ -29,15 +21,9 @@ export default function AgentAdoption() {
     }));
   }, [data.events]);
 
-  // Merge: use agentAdoption if available, else derive from events
-  const allRecords = useMemo(() => {
-    if (data.agentAdoption.length > 0) return data.agentAdoption;
-    return derivedFromEvents;
-  }, [data.agentAdoption, derivedFromEvents]);
-
   const customers = useMemo(() => {
     const set = new Set(allRecords.map(r => r.customerName));
-    return ["All", ...Array.from(set)];
+    return ["All", ...Array.from(set).sort()];
   }, [allRecords]);
 
   const filtered = useMemo(() => {
@@ -45,7 +31,6 @@ export default function AgentAdoption() {
     return allRecords.filter(r => r.customerName === selectedCustomer);
   }, [allRecords, selectedCustomer]);
 
-  // Agent leaderboard
   const agentLeaderboard = useMemo(() => {
     const map = new Map<string, { total: number; features: Set<string> }>();
     for (const r of filtered) {
@@ -59,7 +44,6 @@ export default function AgentAdoption() {
       .sort((a, b) => b.totalUsage - a.totalUsage);
   }, [filtered]);
 
-  // Feature breakdown
   const featureBreakdown = useMemo(() => {
     const map = new Map<string, number>();
     for (const r of filtered) {
@@ -70,7 +54,6 @@ export default function AgentAdoption() {
       .sort((a, b) => b.count - a.count);
   }, [filtered]);
 
-  // Daily trend
   const dailyTrend = useMemo(() => {
     const map = new Map<string, number>();
     for (const r of filtered) {
@@ -82,7 +65,6 @@ export default function AgentAdoption() {
       .sort((a, b) => a.date.localeCompare(b.date));
   }, [filtered]);
 
-  // Heatmap data: agents × features
   const heatmapData = useMemo(() => {
     const features = [...new Set(filtered.map(r => r.featureUsed))];
     const agents = [...new Set(filtered.map(r => r.agentName))];
@@ -92,21 +74,6 @@ export default function AgentAdoption() {
     }
     return { features, agents, map };
   }, [filtered]);
-
-  const handleUpload = (text: string) => {
-    const name = customerInput.trim() || "Unknown";
-    const result = parseAgentAdoptionCSV(text, name);
-    if (result.errors.length > 0 && result.records.length === 0) {
-      setUploadResult({ success: false, message: result.errors.join("; ") });
-      return;
-    }
-    setAgentAdoption(result.records);
-    setUploadResult({
-      success: true,
-      message: `${result.records.length} records loaded for ${name}.${result.errors.length > 0 ? " " + result.errors.join("; ") : ""}`,
-    });
-    if (selectedCustomer === "All") setSelectedCustomer(name);
-  };
 
   const maxHeatVal = useMemo(() => {
     let max = 0;
@@ -147,32 +114,8 @@ export default function AgentAdoption() {
         )}
       </div>
 
-      {/* Upload - hidden in snapshot mode */}
-      {!isSnapshotMode && (
-        <Card className="p-5">
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <label className="text-xs font-medium text-muted-foreground">Customer Name</label>
-              <Input
-                value={customerInput}
-                onChange={e => setCustomerInput(e.target.value)}
-                placeholder="e.g. Accela"
-                className="w-48 h-8 text-sm glass-strong border-glow-cyan"
-              />
-            </div>
-            <UploadPanel
-              title="Agent Adoption CSV"
-              description="Columns: Date (DD-MM-YYYY), Agent Name, Feature Used, Usage Count"
-              onUpload={handleUpload}
-              result={uploadResult}
-            />
-          </div>
-        </Card>
-      )}
-
       {hasRecords && (
         <>
-          {/* KPI row */}
           <div className="grid grid-cols-3 gap-4">
             {[
               { icon: <Users className="w-3.5 h-3.5" />, label: "Total Agents", value: agentLeaderboard.length },
@@ -184,15 +127,12 @@ export default function AgentAdoption() {
                   <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
                     <div className="text-primary">{kpi.icon}</div> {kpi.label}
                   </div>
-                  <p className="text-2xl font-bold tabular-nums text-foreground">
-                    {kpi.value}
-                  </p>
+                  <p className="text-2xl font-bold tabular-nums text-foreground">{kpi.value}</p>
                 </Card>
               </div>
             ))}
           </div>
 
-          {/* Agent Leaderboard + Feature Breakdown */}
           <div className="grid grid-cols-2 gap-4">
             <Card className="p-5 animate-slide-up" style={{ animationDelay: '0.3s', opacity: 0 }}>
               <h3 className="text-sm font-semibold text-card-foreground mb-4 flex items-center gap-2">
@@ -238,7 +178,6 @@ export default function AgentAdoption() {
             </Card>
           </div>
 
-          {/* Daily Trend */}
           <Card className="p-5 animate-slide-up" style={{ animationDelay: '0.5s', opacity: 0 }}>
             <h3 className="text-sm font-semibold text-card-foreground mb-4 flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-primary" /> Usage Trend Over Time
@@ -254,7 +193,6 @@ export default function AgentAdoption() {
             </ResponsiveContainer>
           </Card>
 
-          {/* Heatmap */}
           <Card className="p-5 animate-slide-up" style={{ animationDelay: '0.6s', opacity: 0 }}>
             <h3 className="text-sm font-semibold text-card-foreground mb-4 flex items-center gap-2">
               <Grid3X3 className="w-4 h-4 text-primary" /> Agent × Feature Matrix
@@ -300,7 +238,7 @@ export default function AgentAdoption() {
 
       {!hasRecords && (
         <Card className="p-12 text-center">
-          <p className="text-muted-foreground text-sm">Upload an Agent Adoption CSV above to see analytics.</p>
+          <p className="text-muted-foreground text-sm">No event data available. Upload a reports CSV in Data Management to see agent adoption analytics.</p>
         </Card>
       )}
     </div>
