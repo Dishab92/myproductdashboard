@@ -43,7 +43,8 @@ interface PendingImport {
 }
 
 export default function DataManagement() {
-  const { data, appendEvents, replaceEvents, setCustomers, setScores, setTenantConfig, hasData, isLoading } = useData();
+  const { data, appendEvents, replaceEvents, setCustomers, setScores, setTenantConfig, hasData, isLoading, refreshEvents } = useData();
+  const { user } = useAuth();
   const [eventsResult, setEventsResult] = useState<UploadResult | null>(null);
   const [customersResult, setCustomersResult] = useState<UploadResult | null>(null);
   const [scoresResult, setScoresResult] = useState<UploadResult | null>(null);
@@ -52,6 +53,42 @@ export default function DataManagement() {
   const [showReplaceConfirm, setShowReplaceConfirm] = useState(false);
   const [pendingMappedImport, setPendingMappedImport] = useState<{ events: EventRecord[]; meta: DatasetMeta } | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [datasets, setDatasets] = useState<any[]>([]);
+  const [datasetsLoading, setDatasetsLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const loadDatasets = useCallback(async () => {
+    if (!user) return;
+    setDatasetsLoading(true);
+    try {
+      const { data: rows } = await supabase
+        .from("datasets")
+        .select("*")
+        .eq("owner_id", user.id)
+        .order("created_at", { ascending: false });
+      setDatasets(rows || []);
+    } finally {
+      setDatasetsLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => { loadDatasets(); }, [loadDatasets]);
+
+  const handleDeleteDataset = async (datasetId: string) => {
+    setDeletingId(datasetId);
+    try {
+      // Delete associated events first
+      await supabase.from("events").delete().eq("dataset_id", datasetId).eq("owner_id", user!.id);
+      // Delete dataset record
+      await supabase.from("datasets").delete().eq("id", datasetId).eq("owner_id", user!.id);
+      toast.success("Dataset deleted");
+      await Promise.all([loadDatasets(), refreshEvents()]);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const handleEventsUpload = (text: string, fileName?: string) => {
     const result = detectAndParseEventsCSV(text, data.tenantConfig);
