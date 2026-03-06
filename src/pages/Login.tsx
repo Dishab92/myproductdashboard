@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { Navigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Shield } from "lucide-react";
 import { Starfield } from "@/components/effects/Starfield";
+import { toast } from "@/hooks/use-toast";
 
 export default function Login() {
   const { user, isApproved, loading } = useAuth();
