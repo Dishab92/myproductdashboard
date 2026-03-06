@@ -17,15 +17,33 @@ export default function AgentAdoption() {
   const [uploadResult, setUploadResult] = useState<{ success: boolean; message: string } | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState("All");
 
+  // Derive agent adoption data from main events when no specific CSV uploaded
+  const derivedFromEvents = useMemo(() => {
+    if (data.events.length === 0) return [];
+    return data.events.map(e => ({
+      date: e.event_time,
+      agentName: e.user_id,
+      featureUsed: e.feature || e.event_name,
+      usageCount: 1,
+      customerName: e.customer_name,
+    }));
+  }, [data.events]);
+
+  // Merge: use agentAdoption if available, else derive from events
+  const allRecords = useMemo(() => {
+    if (data.agentAdoption.length > 0) return data.agentAdoption;
+    return derivedFromEvents;
+  }, [data.agentAdoption, derivedFromEvents]);
+
   const customers = useMemo(() => {
-    const set = new Set(data.agentAdoption.map(r => r.customerName));
+    const set = new Set(allRecords.map(r => r.customerName));
     return ["All", ...Array.from(set)];
-  }, [data.agentAdoption]);
+  }, [allRecords]);
 
   const filtered = useMemo(() => {
-    if (selectedCustomer === "All") return data.agentAdoption;
-    return data.agentAdoption.filter(r => r.customerName === selectedCustomer);
-  }, [data.agentAdoption, selectedCustomer]);
+    if (selectedCustomer === "All") return allRecords;
+    return allRecords.filter(r => r.customerName === selectedCustomer);
+  }, [allRecords, selectedCustomer]);
 
   // Agent leaderboard
   const agentLeaderboard = useMemo(() => {
@@ -213,7 +231,7 @@ export default function AgentAdoption() {
                   <CartesianGrid strokeDasharray="3 3" stroke="hsla(var(--border), 0.6)" />
                   <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                   <YAxis dataKey="feature" type="category" width={120} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                  <Tooltip contentStyle={tooltipStyle} />
+                  <Tooltip contentStyle={tooltipStyle} allowEscapeViewBox={{ x: true, y: true }} wrapperStyle={{ zIndex: 1000 }} />
                   <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -230,7 +248,7 @@ export default function AgentAdoption() {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsla(var(--border), 0.6)" />
                 <XAxis dataKey="date" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                 <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                <Tooltip contentStyle={tooltipStyle} />
+                <Tooltip contentStyle={tooltipStyle} allowEscapeViewBox={{ x: true, y: true }} wrapperStyle={{ zIndex: 1000 }} />
                 <Line type="monotone" dataKey="usage" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>

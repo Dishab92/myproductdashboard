@@ -34,6 +34,8 @@ export function FeatureBarChart({ data, maxItems = 10 }: Props) {
             tick={{ fontSize: 11, fill: "hsl(215, 15%, 55%)" }}
           />
           <Tooltip
+            allowEscapeViewBox={{ x: true, y: true }}
+            wrapperStyle={{ zIndex: 1000 }}
             cursor={{ fill: "hsla(var(--primary), 0.08)" }}
             contentStyle={{
               backgroundColor: "hsl(var(--card))",
